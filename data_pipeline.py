@@ -24,7 +24,7 @@ def run_pipeline(data_path):
     # STEP 2: Label Encoding (Aun's logic)
     # ---------------------------------------------------------
     encoder = LabelEncoder()
-    categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+   categorical_cols = df.select_dtypes(include=['object', 'string', 'category']).columns
     for col in categorical_cols:
         df[col] = encoder.fit_transform(df[col])
     print("✅ 3. Categorical text converted to numbers (Encoding).")
@@ -59,6 +59,11 @@ def run_pipeline(data_path):
 
 # Testing the pipeline
 if __name__ == "__main__":
-    # Yahan apne actual dataset ka naam daal dena (jaise 'transactions.csv')
-    dataset_file = "dataset.csv" 
+    # Yahan path me 'data/' lagana zaroori hai kyunki file us folder ke andar hai
+    dataset_file = "data/transactions_train.csv" 
+    
+    print(f"Loading dataset from: {dataset_file}")
     X_train, y_train = run_pipeline(dataset_file)
+    
+    if X_train is not None:
+        print(f"✅ Final Data Shape: {X_train.shape}")
