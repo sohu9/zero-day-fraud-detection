@@ -24,7 +24,7 @@ def run_pipeline(data_path):
     # STEP 2: Label Encoding (Aun's logic)
     # ---------------------------------------------------------
     encoder = LabelEncoder()
-   categorical_cols = df.select_dtypes(include=['object', 'string', 'category']).columns
+  categorical_cols = df.select_dtypes(include=['object', 'category']).columns
     for col in categorical_cols:
         df[col] = encoder.fit_transform(df[col])
     print("✅ 3. Categorical text converted to numbers (Encoding).")
