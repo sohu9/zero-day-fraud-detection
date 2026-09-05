@@ -25,7 +25,7 @@ This project is developed collaboratively by:
 
 * **Momin Shoaib Akhter Rafeeque Ahmed** (Lead - Deep Learning & XAI Local)
 
-* **Mohammad Aun** (Deep Learning & XAI Local)
+* **Mohammad Aun Saeed Akhtar** (Deep Learning & XAI Local)
 
 * **Mohammad Waseem** (Preprocessing & XAI Global)
 
