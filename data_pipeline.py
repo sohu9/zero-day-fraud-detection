@@ -20,15 +20,14 @@ def run_pipeline(data_path):
     df = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
     print("✅ 2. Useless columns dropped (Feature Selection).")
 
-    # ---------------------------------------------------------
-    # STEP 2: Label Encoding (Aun's logic)
+   # ---------------------------------------------------------
+    # STEP 2: Label Encoding (Aun)
     # ---------------------------------------------------------
     encoder = LabelEncoder()
-  categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+    categorical_cols = df.select_dtypes(include=['object', 'string', 'category']).columns
     for col in categorical_cols:
         df[col] = encoder.fit_transform(df[col])
     print("✅ 3. Categorical text converted to numbers (Encoding).")
-
     # Assuming 'is_fraud' is our target column (0 for genuine, 1 for fraud)
     if 'is_fraud' in df.columns:
         X = df.drop(columns=['is_fraud'])
