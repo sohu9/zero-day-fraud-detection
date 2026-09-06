@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from data_pipeline import run_pipeline
 from model_builder import build_autoencoder
 import numpy as np
@@ -41,7 +42,18 @@ def train_fraud_detector():
         validation_split=0.1   # 10% data validation ke liye
     )
 
-    # 5. Save the trained model weights
+    # 5. Plotting and Saving Graph for Presentation
+    print("📊 Plotting and Saving Graph...")
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.title('Model Error Reduction Over Time')
+    plt.ylabel('Loss (Error)')
+    plt.xlabel('Epochs')
+    plt.legend()
+    plt.savefig('training_loss_graph.png')
+    print("✅ Graph saved as 'training_loss_graph.png' for PPT.")
+
+    # 6. Save the trained model weights
     autoencoder.save("zero_day_autoencoder.keras")
     print("🎉 Training Complete! Model saved successfully as 'zero_day_autoencoder.keras'.")
 
