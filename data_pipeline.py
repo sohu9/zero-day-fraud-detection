@@ -14,6 +14,12 @@ def run_pipeline(data_path):
         return None, None
 
     # ---------------------------------------------------------
+    # FIX: Drop rows containing any NaN/Missing values right after loading
+    # ---------------------------------------------------------
+    df = df.dropna()
+    print("✅ 1.1. Missing values (NaN) cleaned successfully.")
+
+    # ---------------------------------------------------------
     # STEP 1: Feature Selection (Waseem & Abdurrahman's logic)
     # ---------------------------------------------------------
     columns_to_drop = ['transaction_id', 'user_name'] 
@@ -21,13 +27,14 @@ def run_pipeline(data_path):
     print("✅ 2. Useless columns dropped (Feature Selection).")
 
    # ---------------------------------------------------------
-    # STEP 2: Label Encoding (Aun)
-    # ---------------------------------------------------------
+   # STEP 2: Label Encoding (Aun)
+   # ---------------------------------------------------------
     encoder = LabelEncoder()
     categorical_cols = df.select_dtypes(include=['object', 'string', 'category']).columns
     for col in categorical_cols:
         df[col] = encoder.fit_transform(df[col])
     print("✅ 3. Categorical text converted to numbers (Encoding).")
+    
     # Assuming 'is_fraud' is our target column (0 for genuine, 1 for fraud)
     if 'is_fraud' in df.columns:
         X = df.drop(columns=['is_fraud'])
@@ -58,7 +65,6 @@ def run_pipeline(data_path):
 
 # Testing the pipeline
 if __name__ == "__main__":
-    # Yahan path me 'data/' lagana zaroori hai kyunki file us folder ke andar hai
     dataset_file = "data/transactions_train.csv" 
     
     print(f"Loading dataset from: {dataset_file}")
