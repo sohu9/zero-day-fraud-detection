@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Zero-Day Fraud Detection</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .header {
+            background: #0f3d56;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+            opacity: 0.85;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #0f3d56;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background: #1d4ed8;
+        }
+
+        #result {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .approved {
+            display: block !important;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+
+        .hold {
+            display: block !important;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+
+        .result-title {
+            font-size: 24px;
+            margin: 5px 0 15px;
+        }
+
+        .result-value {
+            margin: 7px 0;
+            font-size: 16px;
+        }
+
+        .footer {
+            text-align: center;
+            margin: 25px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        @media (max-width: 800px) {
+            .features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Zero-Day Fraud Detection</h1>
+        <p>AI-Powered Online Payment Transaction Analysis</p>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2>Transaction Analysis</h2>
+            <p>Enter the transaction details to analyze the transaction.</p>
+
+            <form id="fraudForm">
+
+                <div class="features">
+
+                    <!-- 1 -->
+                    <div class="field">
+                        <label>Transaction Time</label>
+                        <input
+                            type="text"
+                            id="transaction_time"
+                            placeholder="2023-01-01 00:02:00.328105993"
+                            required>
+                    </div>
+
+                    <!-- 2 -->
+                    <div class="field">
+                        <label>Customer ID</label>
+                        <input
+                            type="number"
+                            id="customer_id"
+                            required>
+                    </div>
+
+                    <!-- 3 -->
+                    <div class="field">
+                        <label>Merchant ID</label>
+                        <input
+                            type="number"
+                            id="merchant_id"
+                            required>
+                    </div>
+
+                    <!-- 4 -->
+                    <div class="field">
+                        <label>Account Age (Days)</label>
+                        <input
+                            type="number"
+                            id="account_age_days"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 5 -->
+                    <div class="field">
+                        <label>Credit Score Band</label>
+                        <input
+                            type="number"
+                            id="credit_score_band"
+                            required>
+                    </div>
+
+                    <!-- 6 -->
+                    <div class="field">
+                        <label>KYC Level</label>
+                        <input
+                            type="number"
+                            id="kyc_level"
+                            required>
+                    </div>
+
+                    <!-- 7 -->
+                    <div class="field">
+                        <label>Average Monthly Spend</label>
+                        <input
+                            type="number"
+                            id="avg_monthly_spend"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 8 -->
+                    <div class="field">
+                        <label>Merchant Risk Score</label>
+                        <input
+                            type="number"
+                            id="merchant_risk_score"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 9 -->
+                    <div class="field">
+                        <label>Transaction Amount</label>
+                        <input
+                            type="number"
+                            id="transaction_amount"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 10 -->
+                    <div class="field">
+                        <label>Payment Channel</label>
+                        <select id="payment_channel" required>
+                            <option value="">Select Channel</option>
+                            <option value="wallet">Wallet</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="card">Card</option>
+                            <option value="upi">UPI</option>
+                        </select>
+                    </div>
+
+                    <!-- 11 -->
+                    <div class="field">
+                        <label>Device Type</label>
+                        <select id="device_type" required>
+                            <option value="">Select Device</option>
+                            <option value="desktop">Desktop</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="tablet">Tablet</option>
+                        </select>
+                    </div>
+
+                    <!-- 12 -->
+                    <div class="field">
+                        <label>International Transaction</label>
+                        <select id="is_international" required>
+                            <option value="">Select</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <!-- 13 -->
+                    <div class="field">
+                        <label>IP Risk Score</label>
+                        <input
+                            type="number"
+                            id="ip_risk_score"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 14 -->
+                    <div class="field">
+                        <label>Transaction Count (1H)</label>
+                        <input
+                            type="number"
+                            id="txn_count_1h"
+                            required>
+                    </div>
+
+                    <!-- 15 -->
+                    <div class="field">
+                        <label>Transaction Count (24H)</label>
+                        <input
+                            type="number"
+                            id="txn_count_24h"
+                            required>
+                    </div>
+
+                    <!-- 16 -->
+                    <div class="field">
+                        <label>Failed Transactions (24H)</label>
+                        <input
+                            type="number"
+                            id="failed_txn_count_24h"
+                            required>
+                    </div>
+
+                    <!-- 17 -->
+                    <div class="field">
+                        <label>Geo Distance From Last Transaction</label>
+                        <input
+                            type="number"
+                            id="geo_distance_from_last_txn"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 18 -->
+                    <div class="field">
+                        <label>Amount Deviation From User Mean</label>
+                        <input
+                            type="number"
+                            id="amount_deviation_from_user_mean"
+                            step="any"
+                            required>
+                    </div>
+
+                    <!-- 19 -->
+                    <div class="field">
+                        <label>Post-Auth Risk Score</label>
+                        <input
+                            type="number"
+                            id="post_auth_risk_score"
+                            step="any"
+                            required>
+                    </div>
+
+                </div>
+
+                <button class="button" type="submit">
+                    Check Transaction
+                </button>
+
+            </form>
+
+            <div id="result"></div>
+
+        </div>
+
+    </div>
+
+    <div class="footer">
+        Zero-Day Fraud Detection Project
+    </div>
+
+
+<script>
+
+document.getElementById("fraudForm").addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const data = {
+
+        transaction_time:
+            document.getElementById("transaction_time").value,
+
+        customer_id:
+            Number(document.getElementById("customer_id").value),
+
+        merchant_id:
+            Number(document.getElementById("merchant_id").value),
+
+        account_age_days:
+            Number(document.getElementById("account_age_days").value),
+
+        credit_score_band:
+            Number(document.getElementById("credit_score_band").value),
+
+        kyc_level:
+            Number(document.getElementById("kyc_level").value),
+
+        avg_monthly_spend:
+            Number(document.getElementById("avg_monthly_spend").value),
+
+        merchant_risk_score:
+            Number(document.getElementById("merchant_risk_score").value),
+
+        transaction_amount:
+            Number(document.getElementById("transaction_amount").value),
+
+        payment_channel:
+            document.getElementById("payment_channel").value,
+
+        device_type:
+            document.getElementById("device_type").value,
+
+        is_international:
+            Number(document.getElementById("is_international").value),
+
+        ip_risk_score:
+            Number(document.getElementById("ip_risk_score").value),
+
+        txn_count_1h:
+            Number(document.getElementById("txn_count_1h").value),
+
+        txn_count_24h:
+            Number(document.getElementById("txn_count_24h").value),
+
+        failed_txn_count_24h:
+            Number(document.getElementById("failed_txn_count_24h").value),
+
+        geo_distance_from_last_txn:
+            Number(document.getElementById("geo_distance_from_last_txn").value),
+
+        amount_deviation_from_user_mean:
+            Number(document.getElementById("amount_deviation_from_user_mean").value),
+
+        post_auth_risk_score:
+            Number(document.getElementById("post_auth_risk_score").value)
+    };
+
+
+    const resultBox = document.getElementById("result");
+
+
+    try {
+
+        const response = await fetch("/predict", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(data)
+
+        });
+
+
+        const result = await response.json();
+
+
+        if (result.error) {
+
+            resultBox.className = "hold";
+
+            resultBox.innerHTML = `
+                <h2 class="result-title">Error</h2>
+                <p>${result.error}</p>
+            `;
+
+            return;
+        }
+
+
+        if (result.risk_level === "High") {
+
+            resultBox.className = "hold";
+
+        } else {
+
+            resultBox.className = "approved";
+
+        }
+
+
+        resultBox.innerHTML = `
+
+            <h2 class="result-title">
+                ${result.transaction_status}
+            </h2>
+
+            <p class="result-value">
+                <strong>Risk Level:</strong>
+                ${result.risk_level}
+            </p>
+
+            <p class="result-value">
+                <strong>Reconstruction Error:</strong>
+                ${result.reconstruction_error}
+            </p>
+
+        `;
+
+    }
+
+
+    catch (error) {
+
+        resultBox.className = "hold";
+
+        resultBox.innerHTML = `
+            <h2 class="result-title">Connection Error</h2>
+            <p>Could not connect to Flask API.</p>
+        `;
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
