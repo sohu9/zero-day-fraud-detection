@@ -8,6 +8,7 @@ from preprocess_live import prepare_preprocessor, preprocess_transaction
 
 app = Flask(__name__)
 CORS(app)
+print("Loading Model...")
 LOG_FILE = "logs/transactions.log"
 
 os.makedirs("logs", exist_ok=True)
