@@ -373,51 +373,44 @@
     <div class="footer">
         Zero-Day Fraud Detection Project
     </div>
-
 <script>
 document.getElementById("fraudForm").addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    // 1. Convert all 19 form inputs into a single numerical array for the Keras Model
-    const dataArray = [
-        new Date(document.getElementById("transaction_time").value).getHours() || 12, // Convert time to hour number
-        Number(document.getElementById("customer_id").value),
-        Number(document.getElementById("merchant_id").value),
-        Number(document.getElementById("account_age_days").value),
-        Number(document.getElementById("credit_score_band").value),
-        Number(document.getElementById("kyc_level").value),
-        Number(document.getElementById("avg_monthly_spend").value),
-        Number(document.getElementById("merchant_risk_score").value),
-        Number(document.getElementById("transaction_amount").value),
-        document.getElementById("payment_channel").selectedIndex, // Convert string option to number
-        document.getElementById("device_type").selectedIndex,     // Convert string option to number
-        Number(document.getElementById("is_international").value),
-        Number(document.getElementById("ip_risk_score").value),
-        Number(document.getElementById("txn_count_1h").value),
-        Number(document.getElementById("txn_count_24h").value),
-        Number(document.getElementById("failed_txn_count_24h").value),
-        Number(document.getElementById("geo_distance_from_last_txn").value),
-        Number(document.getElementById("amount_deviation_from_user_mean").value),
-        Number(document.getElementById("post_auth_risk_score").value)
-    ];
+    const resultBox = document.getElementById("result");
+    resultBox.innerHTML = "Processing..."; 
+    resultBox.className = "hold"; 
 
-    // Wrap it in the "features" key just like the Python backend expects
-    const payload = {
-        features: dataArray
+    // Waseem ka original format jo Flask (Pandas) ko chahiye
+    const data = {
+        transaction_time: document.getElementById("transaction_time").value,
+        customer_id: Number(document.getElementById("customer_id").value),
+        merchant_id: Number(document.getElementById("merchant_id").value),
+        account_age_days: Number(document.getElementById("account_age_days").value),
+        credit_score_band: Number(document.getElementById("credit_score_band").value),
+        kyc_level: Number(document.getElementById("kyc_level").value),
+        avg_monthly_spend: Number(document.getElementById("avg_monthly_spend").value),
+        merchant_risk_score: Number(document.getElementById("merchant_risk_score").value),
+        transaction_amount: Number(document.getElementById("transaction_amount").value),
+        payment_channel: document.getElementById("payment_channel").value,
+        device_type: document.getElementById("device_type").value,
+        is_international: Number(document.getElementById("is_international").value),
+        ip_risk_score: Number(document.getElementById("ip_risk_score").value),
+        txn_count_1h: Number(document.getElementById("txn_count_1h").value),
+        txn_count_24h: Number(document.getElementById("txn_count_24h").value),
+        failed_txn_count_24h: Number(document.getElementById("failed_txn_count_24h").value),
+        geo_distance_from_last_txn: Number(document.getElementById("geo_distance_from_last_txn").value),
+        amount_deviation_from_user_mean: Number(document.getElementById("amount_deviation_from_user_mean").value),
+        post_auth_risk_score: Number(document.getElementById("post_auth_risk_score").value)
     };
 
-    const resultBox = document.getElementById("result");
-    resultBox.innerHTML = "Processing..."; // Loading text
-    resultBox.className = "hold"; // Make it visible temporarily
-
     try {
-        // Direct API Call to your Flask Backend
-        const response = await fetch("http://127.0.0.1:5000/predict", {
+        const response = await fetch("/predict", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(data)
         });
 
         const result = await response.json();
@@ -431,17 +424,19 @@ document.getElementById("fraudForm").addEventListener("submit", async function(e
             return;
         }
 
-        // 2. Beautifully format the result and XAI Explanations
+        // Beautiful XAI formatting
         if (result.risk_level === "High") {
             resultBox.className = "hold";
             
-            // XAI reason string ko tod kar HTML Bullet Points (li) banana
-            const reasons = result.xai_explanation.split(" | ");
-            let reasonsHtml = "<ul style='text-align: left; margin-top: 15px; font-size: 15px;'>";
-            reasons.forEach(reason => {
-                reasonsHtml += `<li style='margin-bottom: 8px;'>${reason}</li>`;
-            });
-            reasonsHtml += "</ul>";
+            let reasonsHtml = "";
+            if (result.xai_explanation) {
+                const reasons = result.xai_explanation.split(" | ");
+                reasonsHtml = "<ul style='text-align: left; margin-top: 15px; font-size: 15px;'>";
+                reasons.forEach(reason => {
+                    reasonsHtml += `<li style='margin-bottom: 8px;'>${reason}</li>`;
+                });
+                reasonsHtml += "</ul>";
+            }
 
             resultBox.innerHTML = `
                 <h2 class="result-title">${result.transaction_status}</h2>
@@ -464,11 +459,35 @@ document.getElementById("fraudForm").addEventListener("submit", async function(e
         resultBox.className = "hold";
         resultBox.innerHTML = `
             <h2 class="result-title">Connection Error</h2>
-            <p>Could not connect to Flask API. Please ensure app.py is running in your terminal.</p>
+            <p>Could not connect to Flask API.</p>
         `;
     }
 });
 </script>
-
+<script>
+// Ye code page load hote hi saari 19 values automatically bhar dega!
+window.onload = function() {
+    document.getElementById("transaction_time").value = "2023-01-01 00:02:00.328105993"; 
+    
+    document.getElementById("customer_id").value = "101";
+    document.getElementById("merchant_id").value = "505";
+    document.getElementById("account_age_days").value = "1";
+    document.getElementById("credit_score_band").value = "200";
+    document.getElementById("kyc_level").value = "1";
+    document.getElementById("avg_monthly_spend").value = "500";
+    document.getElementById("merchant_risk_score").value = "95";
+    document.getElementById("transaction_amount").value = "850000";
+    document.getElementById("payment_channel").value = "Wallet";
+    document.getElementById("device_type").value = "Mobile";
+    document.getElementById("is_international").value = "1"; 
+    document.getElementById("ip_risk_score").value = "99";
+    document.getElementById("txn_count_1h").value = "25";
+    document.getElementById("txn_count_24h").value = "50";
+    document.getElementById("failed_txn_count_24h").value = "15";
+    document.getElementById("geo_distance_from_last_txn").value = "8000";
+    document.getElementById("amount_deviation_from_user_mean").value = "849500";
+    document.getElementById("post_auth_risk_score").value = "95";
+}
+</script>
 </body>
 </html>

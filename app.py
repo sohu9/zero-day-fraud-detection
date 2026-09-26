@@ -39,10 +39,9 @@ print(f"Number of features: {len(feature_columns)}")
 THRESHOLD = 0.9853
 
 
-@app.route("/", methods=["GET"])
+@app.route('/')
 def home():
-    return render_template("index.html")
-
+    return render_template('index.html')
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -68,20 +67,36 @@ def predict():
             axis=1
         )[0]
 
-        # Compare reconstruction error with threshold
+      # Compare reconstruction error with threshold
         if mse > THRESHOLD:
             status = "Hold & Verify 🚨"
             risk = "High"
+            
+            # --- NAYA XAI LOGIC (Top 3 suspicious features nikalne ke liye) ---
+            feature_errors = np.abs(features - reconstruction)[0]
+            top_indices = np.argsort(feature_errors)[-3:][::-1]
+            
+            reasons = []
+            for idx in top_indices:
+                col_name = feature_columns[idx]
+                reasons.append(f"Highly unusual pattern detected in {col_name}")
+            
+            xai_text = " | ".join(reasons)
+            # ------------------------------------------------------------------
         else:
             status = "Approved ✅"
             risk = "Low"
+            xai_text = ""
+
         log_transaction(data, status, risk, mse)
-        # Return result to frontend
+        
+        # Return result to frontend (Ab XAI bhi sath jayega!)
         return jsonify({
             "transaction_status": status,
             "risk_level": risk,
             "reconstruction_error": float(mse),
-            "threshold": THRESHOLD
+            "threshold": THRESHOLD,
+            "xai_explanation": xai_text
         })
 
     except Exception as e:
@@ -90,5 +105,5 @@ def predict():
         }), 400
 
 
-if __name__ == "__main__":
-    app.run(port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
