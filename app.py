@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 import os
@@ -6,6 +7,7 @@ from datetime import datetime
 from preprocess_live import prepare_preprocessor, preprocess_transaction
 
 app = Flask(__name__)
+CORS(app)
 LOG_FILE = "logs/transactions.log"
 
 os.makedirs("logs", exist_ok=True)
