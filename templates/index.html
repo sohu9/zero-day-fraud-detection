@@ -3,150 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Zero-Day Fraud Detection</title>
+    <title>Zero-Day Fraud Detection | Enterprise Security Console</title>
+    <!-- Google Fonts: Inter for UI, JetBrains Mono for metrics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: #111827;
+            --bg-card: #1f2937;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent-cyan: #06b6d4;
+            --danger: #ef4444;
+            --success: #10b981;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --glow-primary: rgba(59, 130, 246, 0.25);
+        }
+
         * {
             box-sizing: border-box;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
-            color: #1f2937;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
+        /* Top Enterprise Navigation Header */
         .header {
-            background: #0f3d56;
-            color: white;
-            padding: 25px;
-            text-align: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 25px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--success);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
         .header h1 {
             margin: 0;
-            font-size: 30px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .header p {
-            margin: 8px 0 0;
-            opacity: 0.85;
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
+        .preset-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .preset-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--primary);
+            color: #93c5fd;
+        }
+
+        /* Main Workspace Layout */
         .container {
-            max-width: 1100px;
-            margin: 30px auto;
+            max-width: 1300px;
+            margin: 40px auto;
             padding: 0 20px;
         }
 
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        .console-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
-        .card h2 {
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin: 30px 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .section-title:first-of-type {
             margin-top: 0;
-            color: #0f3d56;
         }
 
-        .features {
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
         }
 
         .field label {
             display: block;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 7px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
         .field input,
         .field select {
             width: 100%;
-            padding: 11px;
-            border: 1px solid #d1d5db;
-            border-radius: 7px;
-            font-size: 14px;
-            background: white;
+            padding: 11px 13px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-main);
         }
 
         .field input:focus,
         .field select:focus {
             outline: none;
-            border-color: #2563eb;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--glow-primary);
+            background: #111827;
         }
 
-        .button {
+        /* Submit Action Button */
+        .action-panel {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .execute-btn {
             width: 100%;
-            margin-top: 25px;
-            padding: 14px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
             border: none;
-            border-radius: 8px;
-            background: #2563eb;
+            border-radius: 10px;
             color: white;
-            font-size: 17px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
+            box-shadow: 0 4px 20px var(--glow-primary);
+            letter-spacing: 0.5px;
         }
 
-        .button:hover {
-            background: #1d4ed8;
+        .execute-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
         }
 
+        /* Real-Time Telemetry Result Console */
         #result {
             display: none;
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
+            padding: 25px;
+            border-radius: 12px;
+            animation: slideUp 0.35s ease-out;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        .approved {
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .approved-result {
             display: block !important;
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            color: #166534;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
         }
 
-        .hold {
+        .hold-result {
             display: block !important;
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #991b1b;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
         }
 
-        .result-title {
-            font-size: 24px;
-            margin: 5px 0 15px;
+        .result-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .result-value {
-            margin: 7px 0;
-            font-size: 16px;
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent-cyan);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .footer {
             text-align: center;
-            margin: 25px;
-            color: #6b7280;
-            font-size: 13px;
+            margin: 30px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.5px;
         }
 
-        @media (max-width: 800px) {
-            .features {
+        /* Responsive Layout Overhauls */
+        @media (max-width: 1024px) {
+            .features-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        @media (max-width: 500px) {
-            .features {
+        @media (max-width: 640px) {
+            .features-grid {
                 grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
             }
         }
     </style>
@@ -155,108 +284,34 @@
 <body>
 
     <div class="header">
-        <h1>Zero-Day Fraud Detection</h1>
-        <p>AI-Powered Online Payment Transaction Analysis</p>
+        <div class="header-brand">
+            <div class="status-dot"></div>
+            <div>
+                <h1>Zero-Day Fraud Engine</h1>
+                <p>AI-Powered Autonomous Risk & Telemetry Analyzer</p>
+            </div>
+        </div>
+        <div class="preset-controls">
+            <button class="preset-btn" type="button" onclick="loadPreset('fraud')">⚡ Load Fraud Vector</button>
+            <button class="preset-btn" type="button" onclick="loadPreset('safe')">🛡️ Load Safe Payload</button>
+        </div>
     </div>
 
     <div class="container">
-
-        <div class="card">
-
-            <h2>Transaction Analysis</h2>
-            <p>Enter the transaction details to analyze the transaction.</p>
-
+        <div class="console-card">
             <form id="fraudForm">
-
-                <div class="features">
-
-                    <!-- 1 -->
+                
+                <!-- Section 1: Transaction Core -->
+                <div class="section-title">📦 Core Transaction Telemetry</div>
+                <div class="features-grid">
                     <div class="field">
                         <label>Transaction Time</label>
-                        <input
-                            type="text"
-                            id="transaction_time"
-                            placeholder="2023-01-01 00:02:00.328105993"
-                            required>
+                        <input type="text" id="transaction_time" required>
                     </div>
-
-                    <!-- 2 -->
-                    <div class="field">
-                        <label>Customer ID</label>
-                        <input
-                            type="number"
-                            id="customer_id"
-                            required>
-                    </div>
-
-                    <!-- 3 -->
-                    <div class="field">
-                        <label>Merchant ID</label>
-                        <input
-                            type="number"
-                            id="merchant_id"
-                            required>
-                    </div>
-
-                    <!-- 4 -->
-                    <div class="field">
-                        <label>Account Age (Days)</label>
-                        <input
-                            type="number"
-                            id="account_age_days"
-                            step="any"
-                            required>
-                    </div>
-
-                    <!-- 5 -->
-                    <div class="field">
-                        <label>Credit Score Band</label>
-                        <input
-                            type="number"
-                            id="credit_score_band"
-                            required>
-                    </div>
-
-                    <!-- 6 -->
-                    <div class="field">
-                        <label>KYC Level</label>
-                        <input
-                            type="number"
-                            id="kyc_level"
-                            required>
-                    </div>
-
-                    <!-- 7 -->
-                    <div class="field">
-                        <label>Average Monthly Spend</label>
-                        <input
-                            type="number"
-                            id="avg_monthly_spend"
-                            step="any"
-                            required>
-                    </div>
-
-                    <!-- 8 -->
-                    <div class="field">
-                        <label>Merchant Risk Score</label>
-                        <input
-                            type="number"
-                            id="merchant_risk_score"
-                            step="any"
-                            required>
-                    </div>
-
-                    <!-- 9 -->
                     <div class="field">
                         <label>Transaction Amount</label>
-                        <input
-                            type="number"
-                            id="transaction_amount"
-                            step="any"
-                            required>
+                        <input type="number" id="transaction_amount" step="any" required>
                     </div>
-
-                    <!-- 10 -->
                     <div class="field">
                         <label>Payment Channel</label>
                         <select id="payment_channel" required>
@@ -267,8 +322,6 @@
                             <option value="upi">UPI</option>
                         </select>
                     </div>
-
-                    <!-- 11 -->
                     <div class="field">
                         <label>Device Type</label>
                         <select id="device_type" required>
@@ -278,216 +331,234 @@
                             <option value="tablet">Tablet</option>
                         </select>
                     </div>
+                </div>
 
-                    <!-- 12 -->
+                <!-- Section 2: Identity & Profile -->
+                <div class="section-title">👤 Customer Profile & Metadata</div>
+                <div class="features-grid">
                     <div class="field">
-                        <label>International Transaction</label>
+                        <label>Customer ID</label>
+                        <input type="number" id="customer_id" required>
+                    </div>
+                    <div class="field">
+                        <label>Account Age (Days)</label>
+                        <input type="number" id="account_age_days" step="any" required>
+                    </div>
+                    <div class="field">
+                        <label>Credit Score Band</label>
+                        <input type="number" id="credit_score_band" required>
+                    </div>
+                    <div class="field">
+                        <label>KYC Level</label>
+                        <input type="number" id="kyc_level" required>
+                    </div>
+                </div>
+
+                <!-- Section 3: Merchant & Security Network -->
+                <div class="section-title">🌐 Merchant & Network Vectors</div>
+                <div class="features-grid">
+                    <div class="field">
+                        <label>Merchant ID</label>
+                        <input type="number" id="merchant_id" required>
+                    </div>
+                    <div class="field">
+                        <label>Merchant Risk Score</label>
+                        <input type="number" id="merchant_risk_score" step="any" required>
+                    </div>
+                    <div class="field">
+                        <label>IP Risk Score</label>
+                        <input type="number" id="ip_risk_score" step="any" required>
+                    </div>
+                    <div class="field">
+                        <label>Post-Auth Risk Score</label>
+                        <input type="number" id="post_auth_risk_score" step="any" required>
+                    </div>
+                </div>
+
+                <!-- Section 4: Behavioral Velocity & Anomalies -->
+                <div class="section-title">📊 Behavioral Velocity & Deviations</div>
+                <div class="features-grid">
+                    <div class="field">
+                        <label>International Txn</label>
                         <select id="is_international" required>
                             <option value="">Select</option>
                             <option value="0">No</option>
                             <option value="1">Yes</option>
                         </select>
                     </div>
-
-                    <!-- 13 -->
                     <div class="field">
-                        <label>IP Risk Score</label>
-                        <input
-                            type="number"
-                            id="ip_risk_score"
-                            step="any"
-                            required>
+                        <label>Average Monthly Spend</label>
+                        <input type="number" id="avg_monthly_spend" step="any" required>
                     </div>
-
-                    <!-- 14 -->
                     <div class="field">
-                        <label>Transaction Count (1H)</label>
-                        <input
-                            type="number"
-                            id="txn_count_1h"
-                            required>
+                        <label>Txn Count (1H)</label>
+                        <input type="number" id="txn_count_1h" required>
                     </div>
-
-                    <!-- 15 -->
                     <div class="field">
-                        <label>Transaction Count (24H)</label>
-                        <input
-                            type="number"
-                            id="txn_count_24h"
-                            required>
+                        <label>Txn Count (24H)</label>
+                        <input type="number" id="txn_count_24h" required>
                     </div>
-
-                    <!-- 16 -->
                     <div class="field">
-                        <label>Failed Transactions (24H)</label>
-                        <input
-                            type="number"
-                            id="failed_txn_count_24h"
-                            required>
+                        <label>Failed Txns (24H)</label>
+                        <input type="number" id="failed_txn_count_24h" required>
                     </div>
-
-                    <!-- 17 -->
                     <div class="field">
-                        <label>Geo Distance From Last Transaction</label>
-                        <input
-                            type="number"
-                            id="geo_distance_from_last_txn"
-                            step="any"
-                            required>
+                        <label>Geo Distance From Last</label>
+                        <input type="number" id="geo_distance_from_last_txn" step="any" required>
                     </div>
-
-                    <!-- 18 -->
                     <div class="field">
-                        <label>Amount Deviation From User Mean</label>
-                        <input
-                            type="number"
-                            id="amount_deviation_from_user_mean"
-                            step="any"
-                            required>
+                        <label>Amount Deviation (Mean)</label>
+                        <input type="number" id="amount_deviation_from_user_mean" step="any" required>
                     </div>
-
-                    <!-- 19 -->
-                    <div class="field">
-                        <label>Post-Auth Risk Score</label>
-                        <input
-                            type="number"
-                            id="post_auth_risk_score"
-                            step="any"
-                            required>
-                    </div>
-
                 </div>
 
-                <button class="button" type="submit">
-                    Check Transaction
-                </button>
+                <div class="action-panel">
+                    <button class="execute-btn" type="submit">
+                        RUN RISK ASSESSMENT PIPELINE
+                    </button>
+                </div>
 
             </form>
 
             <div id="result"></div>
-
         </div>
-
     </div>
 
     <div class="footer">
-        Zero-Day Fraud Detection Project
+        Zero-Day Enterprise Fraud Intelligence Platform &copy; 2026 | Secure Core v4.8
     </div>
-<script>
-document.getElementById("fraudForm").addEventListener("submit", async function(event) {
-    event.preventDefault();
 
-    const resultBox = document.getElementById("result");
-    resultBox.innerHTML = "Processing..."; 
-    resultBox.className = "hold"; 
+    <script>
+        // Preset simulation data loader for expert diagnostic evaluations
+        function loadPreset(type) {
+            if (type === 'fraud') {
+                document.getElementById("transaction_time").value = "2026-03-30 02:14:05.10293";
+                document.getElementById("customer_id").value = "9982";
+                document.getElementById("merchant_id").value = "4041";
+                document.getElementById("account_age_days").value = "2";
+                document.getElementById("credit_score_band").value = "310";
+                document.getElementById("kyc_level").value = "1";
+                document.getElementById("avg_monthly_spend").value = "350.00";
+                document.getElementById("merchant_risk_score").value = "98.5";
+                document.getElementById("transaction_amount").value = "125000.00";
+                document.getElementById("payment_channel").value = "wallet";
+                document.getElementById("device_type").value = "mobile";
+                document.getElementById("is_international").value = "1";
+                document.getElementById("ip_risk_score").value = "99.1";
+                document.getElementById("txn_count_1h").value = "14";
+                document.getElementById("txn_count_24h").value = "28";
+                document.getElementById("failed_txn_count_24h").value = "6";
+                document.getElementById("geo_distance_from_last_txn").value = "4500.5";
+                document.getElementById("amount_deviation_from_user_mean").value = "124650.0";
+                document.getElementById("post_auth_risk_score").value = "97.0";
+            } else {
+                document.getElementById("transaction_time").value = "2026-03-30 14:22:10.88412";
+                document.getElementById("customer_id").value = "1042";
+                document.getElementById("merchant_id").value = "109";
+                document.getElementById("account_age_days").value = "730";
+                document.getElementById("credit_score_band").value = "780";
+                document.getElementById("kyc_level").value = "3";
+                document.getElementById("avg_monthly_spend").value = "1250.00";
+                document.getElementById("merchant_risk_score").value = "2.1";
+                document.getElementById("transaction_amount").value = "45.00";
+                document.getElementById("payment_channel").value = "card";
+                document.getElementById("device_type").value = "desktop";
+                document.getElementById("is_international").value = "0";
+                document.getElementById("ip_risk_score").value = "1.2";
+                document.getElementById("txn_count_1h").value = "1";
+                document.getElementById("txn_count_24h").value = "3";
+                document.getElementById("failed_txn_count_24h").value = "0";
+                document.getElementById("geo_distance_from_last_txn").value = "2.4";
+                document.getElementById("amount_deviation_from_user_mean").value = "5.0";
+                document.getElementById("post_auth_risk_score").value = "1.0";
+            }
+        }
 
-    // Waseem ka original format jo Flask (Pandas) ko chahiye
-    const data = {
-        transaction_time: document.getElementById("transaction_time").value,
-        customer_id: Number(document.getElementById("customer_id").value),
-        merchant_id: Number(document.getElementById("merchant_id").value),
-        account_age_days: Number(document.getElementById("account_age_days").value),
-        credit_score_band: Number(document.getElementById("credit_score_band").value),
-        kyc_level: Number(document.getElementById("kyc_level").value),
-        avg_monthly_spend: Number(document.getElementById("avg_monthly_spend").value),
-        merchant_risk_score: Number(document.getElementById("merchant_risk_score").value),
-        transaction_amount: Number(document.getElementById("transaction_amount").value),
-        payment_channel: document.getElementById("payment_channel").value,
-        device_type: document.getElementById("device_type").value,
-        is_international: Number(document.getElementById("is_international").value),
-        ip_risk_score: Number(document.getElementById("ip_risk_score").value),
-        txn_count_1h: Number(document.getElementById("txn_count_1h").value),
-        txn_count_24h: Number(document.getElementById("txn_count_24h").value),
-        failed_txn_count_24h: Number(document.getElementById("failed_txn_count_24h").value),
-        geo_distance_from_last_txn: Number(document.getElementById("geo_distance_from_last_txn").value),
-        amount_deviation_from_user_mean: Number(document.getElementById("amount_deviation_from_user_mean").value),
-        post_auth_risk_score: Number(document.getElementById("post_auth_risk_score").value)
-    };
+        // Form Submission Pipeline & Telemetry Handling
+        document.getElementById("fraudForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
 
-    try {
-        const response = await fetch("/predict", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
+            const resultBox = document.getElementById("result");
+            resultBox.innerHTML = `<div style="display:flex; align-items:center; gap:12px;"><div class="spinner"></div> Executing Deep Neural Network Inference...</div>`;
+            resultBox.className = "hold-result";
+
+            const payload = {
+                transaction_time: document.getElementById("transaction_time").value,
+                customer_id: Number(document.getElementById("customer_id").value),
+                merchant_id: Number(document.getElementById("merchant_id").value),
+                account_age_days: Number(document.getElementById("account_age_days").value),
+                credit_score_band: Number(document.getElementById("credit_score_band").value),
+                kyc_level: Number(document.getElementById("kyc_level").value),
+                avg_monthly_spend: Number(document.getElementById("avg_monthly_spend").value),
+                merchant_risk_score: Number(document.getElementById("merchant_risk_score").value),
+                transaction_amount: Number(document.getElementById("transaction_amount").value),
+                payment_channel: document.getElementById("payment_channel").value,
+                device_type: document.getElementById("device_type").value,
+                is_international: Number(document.getElementById("is_international").value),
+                ip_risk_score: Number(document.getElementById("ip_risk_score").value),
+                txn_count_1h: Number(document.getElementById("txn_count_1h").value),
+                txn_count_24h: Number(document.getElementById("txn_count_24h").value),
+                failed_txn_count_24h: Number(document.getElementById("failed_txn_count_24h").value),
+                geo_distance_from_last_txn: Number(document.getElementById("geo_distance_from_last_txn").value),
+                amount_deviation_from_user_mean: Number(document.getElementById("amount_deviation_from_user_mean").value),
+                post_auth_risk_score: Number(document.getElementById("post_auth_risk_score").value)
+            };
+
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    resultBox.className = "hold-result";
+                    resultBox.innerHTML = `<div class="result-header">⚠️ API Exception</div><p>${result.error}</p>`;
+                    return;
+                }
+
+                if (result.risk_level === "High") {
+                    resultBox.className = "hold-result";
+                    
+                    let reasonsHtml = "";
+                    if (result.xai_explanation) {
+                        const reasons = result.xai_explanation.split(" | ");
+                        reasonsHtml = "<ul style='margin: 10px 0 0; padding-left: 18px; font-size: 13px;'>";
+                        reasons.forEach(reason => {
+                            reasonsHtml += `<li style='margin-bottom: 5px;'>${reason}</li>`;
+                        });
+                        reasonsHtml += "</ul>";
+                    }
+
+                    resultBox.innerHTML = `
+                        <div class="result-header">🚨 [ALERT] ${result.transaction_status}</div>
+                        <div style="font-size: 14px; margin-bottom: 6px;">Risk Level: <strong>${result.risk_level}</strong></div>
+                        <div style="font-size: 14px; margin-bottom: 12px;">Anomaly Reconstruction Error: <strong>${result.reconstruction_error.toFixed(4)}</strong></div>
+                        <hr style="border: 0; border-top: 1px solid rgba(239, 68, 68, 0.3); margin: 12px 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: #f87171;">XAI Factor Diagnostics:</div>
+                        ${reasonsHtml}
+                    `;
+                } else {
+                    resultBox.className = "approved-result";
+                    resultBox.innerHTML = `
+                        <div class="result-header">✅ [SECURE] ${result.transaction_status}</div>
+                        <div style="font-size: 14px; margin-bottom: 6px;">Risk Level: <strong>${result.risk_level}</strong></div>
+                        <div style="font-size: 14px;">Anomaly Reconstruction Error: <strong>${result.reconstruction_error.toFixed(4)}</strong></div>
+                    `;
+                }
+
+            } catch (err) {
+                resultBox.className = "hold-result";
+                resultBox.innerHTML = `<div class="result-header">❌ Gateway Connection Error</div><p>Failed to establish socket bridge with backend Flask service.</p>`;
+            }
         });
 
-        const result = await response.json();
-
-        if (result.error) {
-            resultBox.className = "hold";
-            resultBox.innerHTML = `
-                <h2 class="result-title">Error</h2>
-                <p>${result.error}</p>
-            `;
-            return;
-        }
-
-        // Beautiful XAI formatting
-        if (result.risk_level === "High") {
-            resultBox.className = "hold";
-            
-            let reasonsHtml = "";
-            if (result.xai_explanation) {
-                const reasons = result.xai_explanation.split(" | ");
-                reasonsHtml = "<ul style='text-align: left; margin-top: 15px; font-size: 15px;'>";
-                reasons.forEach(reason => {
-                    reasonsHtml += `<li style='margin-bottom: 8px;'>${reason}</li>`;
-                });
-                reasonsHtml += "</ul>";
-            }
-
-            resultBox.innerHTML = `
-                <h2 class="result-title">${result.transaction_status}</h2>
-                <p class="result-value"><strong>Risk Level:</strong> ${result.risk_level}</p>
-                <p class="result-value"><strong>Anomaly Score:</strong> ${result.reconstruction_error.toFixed(4)}</p>
-                <hr style="border: 0; border-top: 1px solid #fca5a5; margin: 15px 0;">
-                <h3 style="margin-bottom: 5px; color: #991b1b;">⚠️ Fraud Explanations (XAI):</h3>
-                ${reasonsHtml}
-            `;
-        } else {
-            resultBox.className = "approved";
-            resultBox.innerHTML = `
-                <h2 class="result-title">${result.transaction_status}</h2>
-                <p class="result-value"><strong>Risk Level:</strong> ${result.risk_level}</p>
-                <p class="result-value"><strong>Anomaly Score:</strong> ${result.reconstruction_error.toFixed(4)}</p>
-            `;
-        }
-
-    } catch (error) {
-        resultBox.className = "hold";
-        resultBox.innerHTML = `
-            <h2 class="result-title">Connection Error</h2>
-            <p>Could not connect to Flask API.</p>
-        `;
-    }
-});
-</script>
-<script>
-// Ye code page load hote hi saari 19 values automatically bhar dega!
-window.onload = function() {
-    document.getElementById("transaction_time").value = "2023-01-01 00:02:00.328105993"; 
-    
-    document.getElementById("customer_id").value = "101";
-    document.getElementById("merchant_id").value = "505";
-    document.getElementById("account_age_days").value = "1";
-    document.getElementById("credit_score_band").value = "200";
-    document.getElementById("kyc_level").value = "1";
-    document.getElementById("avg_monthly_spend").value = "500";
-    document.getElementById("merchant_risk_score").value = "95";
-    document.getElementById("transaction_amount").value = "850000";
-    document.getElementById("payment_channel").value = "Wallet";
-    document.getElementById("device_type").value = "Mobile";
-    document.getElementById("is_international").value = "1"; 
-    document.getElementById("ip_risk_score").value = "99";
-    document.getElementById("txn_count_1h").value = "25";
-    document.getElementById("txn_count_24h").value = "50";
-    document.getElementById("failed_txn_count_24h").value = "15";
-    document.getElementById("geo_distance_from_last_txn").value = "8000";
-    document.getElementById("amount_deviation_from_user_mean").value = "849500";
-    document.getElementById("post_auth_risk_score").value = "95";
-}
-</script>
+        // Initialize default state on boot
+        window.onload = function() {
+            loadPreset('safe');
+        };
+    </script>
 </body>
 </html>
