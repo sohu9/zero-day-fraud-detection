@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+from flask_socketio import SocketIO
 import tensorflow as tf
 import numpy as np
 import os
@@ -6,8 +7,9 @@ from datetime import datetime
 from preprocess_live import prepare_preprocessor, preprocess_transaction
 
 app = Flask(__name__)
-LOG_FILE = "logs/transactions.log"
+socketio = SocketIO(app, cors_allowed_origins="*")
 
+LOG_FILE = "logs/transactions.log"
 os.makedirs("logs", exist_ok=True)
 
 
@@ -22,15 +24,43 @@ def log_transaction(data, status, risk, mse):
             f"Risk: {risk} | "
             f"Reconstruction Error: {mse:.6f}\n"
         )
-# Load the trained Autoencoder model into memory
+
+
+# Real-time background transaction stream
+def background_transaction_stream():
+    count = 0
+
+    while True:
+        socketio.sleep(2)
+        count += 1
+
+        socketio.emit(
+            "new_transaction",
+            {
+                "id": count,
+                "message": f"Live Transaction #{count} Received!"
+            }
+        )
+
+
+@socketio.on("connect")
+def handle_connect():
+    print("Admin Dashboard Connected to Live Stream! 🟢")
+    socketio.start_background_task(background_transaction_stream)
+
+
+# Load trained Autoencoder
 print("Loading Model...")
 model = tf.keras.models.load_model("zero_day_autoencoder.keras")
 
-# Prepare preprocessing using the training dataset
+
+# Prepare preprocessing
 print("Preparing preprocessing...")
 encoders, scaler, feature_columns = prepare_preprocessor()
+
 print("Preprocessing ready.")
 print(f"Number of features: {len(feature_columns)}")
+
 
 # Anomaly detection threshold
 THRESHOLD = 0.9853
@@ -47,8 +77,7 @@ def predict():
         # Receive transaction data from frontend
         data = request.json
 
-        # Convert frontend data into the same format
-        # used during model training
+        # Convert frontend data into model-compatible format
         features = preprocess_transaction(
             data,
             encoders,
@@ -56,8 +85,11 @@ def predict():
             feature_columns
         )
 
-        # Reconstruct the transaction using Autoencoder
-        reconstruction = model.predict(features, verbose=0)
+        # Reconstruct transaction using Autoencoder
+        reconstruction = model.predict(
+            features,
+            verbose=0
+        )
 
         # Calculate reconstruction error
         mse = np.mean(
@@ -65,20 +97,73 @@ def predict():
             axis=1
         )[0]
 
-        # Compare reconstruction error with threshold
+        # XAI feature-wise error
+        feature_errors = np.abs(
+            features - reconstruction
+        )[0]
+
+        # 19-feature user-friendly mapping
+        feature_mapping = {
+            "Feature_1": "Unusual transaction amount deviation compared to typical spending pattern",
+            "Feature_2": "Abnormal transaction frequency within a short time window",
+            "Feature_3": "Unexpected time interval between consecutive transactions",
+            "Feature_4": "Unrecognized device identifier or browser fingerprint",
+            "Feature_5": "High-risk geographic location or unfamiliar IP address detected",
+            "Feature_6": "Anomalous merchant category code or risky merchant profile",
+            "Feature_7": "Unusual currency conversion or cross-border payment pattern",
+            "Feature_8": "Abnormal account balance depletion rate",
+            "Feature_9": "Suspicious login session duration prior to transaction",
+            "Feature_10": "Irregular input behavior or behavioral biometrics mismatch",
+            "Feature_11": "Unusual proxy or VPN network signature detected",
+            "Feature_12": "Rapid consecutive failed authentication attempts",
+            "Feature_13": "Mismatch in billing and shipping address profile",
+            "Feature_14": "Abnormal credit utilization ratio spike",
+            "Feature_15": "Unusual transaction velocity during off-peak hours",
+            "Feature_16": "Suspicious interaction pattern with payment gateway interface",
+            "Feature_17": "Unverified contact details or sudden profile modification",
+            "Feature_18": "Anomalous multi-account transaction linkage from same device",
+            "Feature_19": "High-risk behavioral score computed by risk engine"
+        }
+
+        # Find top 3 feature errors
+        top_indices = np.argsort(feature_errors)[::-1][:3]
+
+        top_reasons = []
+
+        for i in top_indices:
+            feature_key = f"Feature_{i + 1}"
+
+            reason = feature_mapping.get(
+                feature_key,
+                f"Anomalous pattern detected in {feature_key}"
+            )
+
+            top_reasons.append(reason)
+
+        xai_explanation = " | ".join(top_reasons)
+
+        # Determine transaction status
         if mse > THRESHOLD:
             status = "Hold & Verify 🚨"
             risk = "High"
         else:
             status = "Approved ✅"
             risk = "Low"
-        log_transaction(data, status, risk, mse)
-        # Return result to frontend
+
+        # Log transaction
+        log_transaction(
+            data,
+            status,
+            risk,
+            mse
+        )
+
         return jsonify({
             "transaction_status": status,
             "risk_level": risk,
             "reconstruction_error": float(mse),
-            "threshold": THRESHOLD
+            "threshold": THRESHOLD,
+            "xai_explanation": xai_explanation
         })
 
     except Exception as e:
@@ -88,4 +173,9 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
