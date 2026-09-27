@@ -1,11 +1,10 @@
-<<<<<<< HEAD
+
 from flask import Flask, request, jsonify, render_template
+from flask_socketio import SocketIO
 from flask_cors import CORS
-=======
 from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 import numpy as np
->>>>>>> origin/feature/real-time-engine
 import tensorflow as tf
 import numpy as np
 import os
@@ -13,11 +12,12 @@ from datetime import datetime
 from preprocess_live import prepare_preprocessor, preprocess_transaction
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 CORS(app)
 print("Loading Model...")
 LOG_FILE = "logs/transactions.log"
 
-<<<<<<< HEAD
 os.makedirs("logs", exist_ok=True)
 
 
@@ -32,37 +32,53 @@ def log_transaction(data, status, risk, mse):
             f"Risk: {risk} | "
             f"Reconstruction Error: {mse:.6f}\n"
         )
-=======
+
 # WebSockets initialize
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Dummy background task jo har 2 second mein live data bhejega
+# Real-time background transaction stream
 def background_transaction_stream():
     count = 0
+
     while True:
         socketio.sleep(2)
         count += 1
-        socketio.emit('new_transaction', {'id': count, 'message': f'Live Transaction #{count} Received!'})
 
-@socketio.on('connect')
+        socketio.emit(
+            "new_transaction",
+            {
+                "id": count,
+                "message": f"Live Transaction #{count} Received!"
+            }
+        )
+
+
+@socketio.on("connect")
 def handle_connect():
     print("Admin Dashboard Connected to Live Stream! 🟢")
     socketio.start_background_task(background_transaction_stream)
 
->>>>>>> origin/feature/real-time-engine
+
+# Load trained Autoencoder
 # Load the trained Autoencoder model into memory
 print("Loading Model...")
 model = tf.keras.models.load_model("zero_day_autoencoder.keras")
 
+
+# Prepare preprocessing
 # Prepare preprocessing using the training dataset
 print("Preparing preprocessing...")
 encoders, scaler, feature_columns = prepare_preprocessor()
+
 print("Preprocessing ready.")
 print(f"Number of features: {len(feature_columns)}")
+
 
 # Anomaly detection threshold
 THRESHOLD = 0.9853
 
+
+@app.route("/", methods=["GET"])
 
 @app.route('/')
 def home():
@@ -74,8 +90,7 @@ def predict():
         # Receive transaction data from frontend
         data = request.json
 
-        # Convert frontend data into the same format
-        # used during model training
+        # Convert frontend data into model-compatible format
         features = preprocess_transaction(
             data,
             encoders,
@@ -83,18 +98,25 @@ def predict():
             feature_columns
         )
 
-        # Reconstruct the transaction using Autoencoder
-        reconstruction = model.predict(features, verbose=0)
+        # Reconstruct transaction using Autoencoder
+        reconstruction = model.predict(
+            features,
+            verbose=0
+        )
 
-<<<<<<< HEAD
         # Calculate reconstruction error
         mse = np.mean(
             np.power(features - reconstruction, 2),
             axis=1
         )[0]
 
+        # XAI feature-wise error
+        feature_errors = np.abs(
+            features - reconstruction
+        )[0]
+
+        # 19-feature user-friendly mapping
       # Compare reconstruction error with threshold
-=======
         # --- XAI LOGIC (Professional 19-Feature User-Friendly Mapping) ---
         # 1. Feature-wise absolute error nikalna
         feature_errors = np.abs(features - reconstruction)[0]
@@ -122,21 +144,26 @@ def predict():
             "Feature_19": "High-risk behavioral score computed by risk engine"
         }
 
-        # 3. Sabse zyada error wale top 3 features nikalna
+        # Find top 3 feature errors
         top_indices = np.argsort(feature_errors)[::-1][:3]
-        
-        # 4. Map top indices to professional user-friendly sentences
-        top_reasons = []
-        for i in top_indices:
-            feature_key = f"Feature_{i+1}"
-            reason = feature_mapping.get(feature_key, f"Anomalous pattern detected in {feature_key}")
-            top_reasons.append(reason)
-            
-        xai_explanation = " | ".join(top_reasons)
-        # ------------------------------------------------------------------
 
+        top_reasons = []
+
+        for i in top_indices:
+            feature_key = f"Feature_{i + 1}"
+
+            reason = feature_mapping.get(
+                feature_key,
+                f"Anomalous pattern detected in {feature_key}"
+            )
+
+            top_reasons.append(reason)
+
+        xai_explanation = " | ".join(top_reasons)
+
+        # Determine transaction status
         # Determine the transaction status based on the threshold
->>>>>>> origin/feature/real-time-engine
+
         if mse > THRESHOLD:
             status = "Hold & Verify 🚨"
             risk = "High"
@@ -155,6 +182,15 @@ def predict():
         else:
             status = "Approved ✅"
             risk = "Low"
+
+        # Log transaction
+        log_transaction(
+            data,
+            status,
+            risk,
+            mse
+        )
+
             xai_text = ""
 
         log_transaction(data, status, risk, mse)
@@ -165,6 +201,8 @@ def predict():
             "risk_level": risk,
             "reconstruction_error": float(mse),
             "threshold": THRESHOLD,
+            "xai_explanation": xai_explanation
+            "threshold": THRESHOLD,
             "xai_explanation": xai_text
         })
 
@@ -174,11 +212,18 @@ def predict():
         }), 400
 
 
-<<<<<<< HEAD
+if __name__ == "__main__":
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-=======
+
 if __name__ == "__main__":
     # Run the server using socketio.run for real-time WebSocket support
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
->>>>>>> origin/feature/real-time-engine
+

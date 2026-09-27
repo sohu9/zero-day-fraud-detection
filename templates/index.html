@@ -555,10 +555,19 @@
             }
         });
 
-        // Initialize default state on boot
-        window.onload = function() {
-            loadPreset('safe');
-        };
-    </script>
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+
+<script>
+    const socket = io();
+
+    socket.on('connect', function() {
+        console.log("Connected to Real-Time Server! 🟢");
+    });
+
+    socket.on('new_transaction', function(data) {
+        console.log("🔥 NEW LIVE DATA:", data.message);
+    });
+</script>
 </body>
 </html>
