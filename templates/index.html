@@ -3,571 +3,2767 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zero-Day Fraud Detection | Enterprise Security Console</title>
-    <!-- Google Fonts: Inter for UI, JetBrains Mono for metrics -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <title>Zero-Day Fraud Intelligence</title>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <style>
-        :root {
-            --bg-base: #090d16;
-            --bg-surface: #111827;
-            --bg-card: #1f2937;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --accent-cyan: #06b6d4;
-            --danger: #ef4444;
-            --success: #10b981;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border-color: #374151;
-            --glow-primary: rgba(59, 130, 246, 0.25);
-        }
-
         * {
             box-sizing: border-box;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-main);
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+
+            background: #f5f7fb;
+            color: #1f2937;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
-        /* Top Enterprise Navigation Header */
-        .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border-bottom: 1px solid var(--border-color);
-            padding: 25px 40px;
+        /* =========================
+           TOP BAR
+        ========================= */
+
+        .topbar {
+            height: 72px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+            padding: 0 34px;
+
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .header-brand {
+        .brand {
             display: flex;
             align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+
+            border-radius: 12px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #4f46e5
+                );
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: white;
+            font-size: 22px;
+
+            box-shadow:
+                0 8px 20px rgba(37, 99, 235, 0.18);
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 750;
+            color: #111827;
+            letter-spacing: -0.4px;
+        }
+
+        .brand-text p {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .connection {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+
+            padding: 8px 13px;
+
+            border-radius: 20px;
+
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .connection-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .connection.connected {
+            color: #047857;
+            background: #ecfdf5;
+            border-color: #bbf7d0;
+        }
+
+        .connection.connected .connection-dot {
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 28px 34px 50px;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-header h2 {
+            font-size: 27px;
+            font-weight: 750;
+            color: #111827;
+            letter-spacing: -0.6px;
+        }
+
+        .page-header p {
+            margin-top: 6px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* =========================
+           STAT CARDS
+        ========================= */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+
+            gap: 18px;
+
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+
+            border-radius: 16px;
+
+            padding: 20px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
+
+            user-select: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 30px rgba(15, 23, 42, 0.08);
+
+            border-color: #cbd5e1;
+        }
+
+        .stat-card.active {
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .stat-info span {
+            display: block;
+
+            font-size: 12px;
+            font-weight: 650;
+
+            color: #6b7280;
+
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+
+            margin-bottom: 8px;
+        }
+
+        .stat-info strong {
+            font-size: 29px;
+            font-weight: 750;
+
+            color: #111827;
+        }
+
+        .stat-card small {
+            display: block;
+
+            margin-top: 5px;
+
+            color: #9ca3af;
+            font-size: 11px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+
+            border-radius: 13px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 21px;
+        }
+
+        .icon-blue {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .icon-green {
+            color: #059669;
+            background: #ecfdf5;
+        }
+
+        .icon-orange {
+            color: #d97706;
+            background: #fffbeb;
+        }
+
+        .icon-red {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
+        /* =========================
+           STREAM CARD
+        ========================= */
+
+        .stream-card {
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 18px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 5px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .stream-header {
+            padding: 20px 22px;
+
+            border-bottom: 1px solid #edf0f4;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
             gap: 15px;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            background: var(--success);
-            border-radius: 50%;
-            box-shadow: 0 0 12px var(--success);
-            animation: pulseGlow 2s infinite;
-        }
-
-        @keyframes pulseGlow {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            background: linear-gradient(to right, #ffffff, #93c5fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header p {
-            margin: 4px 0 0;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .preset-controls {
+        .stream-title {
             display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .stream-title-icon {
+            width: 38px;
+            height: 38px;
+
+            border-radius: 10px;
+
+            background: #eff6ff;
+            color: #2563eb;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 17px;
+        }
+
+        .stream-title h3 {
+            font-size: 16px;
+            font-weight: 720;
+            color: #111827;
+        }
+
+        .stream-title p {
+            margin-top: 3px;
+
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .stream-actions {
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
 
-        .preset-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
+        .filter-badge {
+            padding: 7px 11px;
 
-        .preset-btn:hover {
-            background: rgba(59, 130, 246, 0.15);
-            border-color: var(--primary);
-            color: #93c5fd;
-        }
-
-        /* Main Workspace Layout */
-        .container {
-            max-width: 1300px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .console-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 35px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--accent-cyan);
-            margin: 30px 0 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-        }
-
-        .section-title:first-of-type {
-            margin-top: 0;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 18px;
-        }
-
-        .field label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-
-        .field input,
-        .field select {
-            width: 100%;
-            padding: 11px 13px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: var(--text-main);
+
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+
+            color: #64748b;
+
+            font-size: 11px;
+            font-weight: 650;
         }
 
-        .field input:focus,
-        .field select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--glow-primary);
-            background: #111827;
+        .clear-btn {
+            border: 1px solid #e5e7eb;
+
+            background: #ffffff;
+
+            color: #6b7280;
+
+            border-radius: 8px;
+
+            padding: 8px 12px;
+
+            cursor: pointer;
+
+            font-size: 12px;
+            font-weight: 650;
+
+            transition: 0.2s ease;
         }
 
-        /* Submit Action Button */
-        .action-panel {
-            margin-top: 40px;
+        .clear-btn:hover {
+            background: #f8fafc;
+            color: #374151;
+        }
+
+        /* =========================
+           TRANSACTION STREAM
+        ========================= */
+
+        #transaction-stream {
+            padding: 18px;
+
             display: flex;
             flex-direction: column;
-            gap: 20px;
+
+            gap: 13px;
+
+            max-height: 720px;
+
+            overflow-y: auto;
         }
 
-        .execute-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 20px var(--glow-primary);
-            letter-spacing: 0.5px;
+        #transaction-stream::-webkit-scrollbar {
+            width: 7px;
         }
 
-        .execute-btn:hover {
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        #transaction-stream::-webkit-scrollbar-track {
+            background: #f8fafc;
         }
 
-        /* Real-Time Telemetry Result Console */
-        #result {
-            display: none;
-            padding: 25px;
-            border-radius: 12px;
-            animation: slideUp 0.35s ease-out;
-            font-family: 'JetBrains Mono', monospace;
+        #transaction-stream::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 20px;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* =========================
+           TRANSACTION CARD
+        ========================= */
+
+        .transaction-card {
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 14px;
+
+            padding: 17px 18px;
+
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+
+            animation: cardIn 0.25s ease;
         }
 
-        .approved-result {
-            display: block !important;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: #34d399;
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .hold-result {
-            display: block !important;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
+        .transaction-card:hover {
+            border-color: #cbd5e1;
+
+            box-shadow:
+                0 8px 24px rgba(15, 23, 42, 0.06);
         }
 
-        .result-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 12px;
+        .transaction-card.high-risk {
+            border-left: 4px solid #ef4444;
+        }
+
+        .transaction-card.medium-risk {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .transaction-card.low-risk {
+            border-left: 4px solid #10b981;
+        }
+
+        .transaction-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+
+            gap: 15px;
+
+            margin-bottom: 15px;
+        }
+
+        .transaction-heading {
+            min-width: 0;
+        }
+
+        .transaction-id {
+            font-size: 13px;
+
+            font-weight: 750;
+
+            color: #111827;
+
+            word-break: break-word;
+        }
+
+        .transaction-time {
+            margin-top: 4px;
+
+            color: #9ca3af;
+
+            font-size: 11px;
+        }
+
+        .badges {
             display: flex;
             align-items: center;
+            gap: 7px;
+
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .badge {
+            padding: 5px 9px;
+
+            border-radius: 7px;
+
+            font-size: 10px;
+
+            font-weight: 750;
+
+            white-space: nowrap;
+        }
+
+        .badge-approved {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .badge-hold {
+            background: #fffbeb;
+            color: #b45309;
+        }
+
+        .badge-high {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .badge-medium {
+            background: #fffbeb;
+            color: #b45309;
+        }
+
+        .badge-low {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        /* =========================
+           DETAILS GRID
+        ========================= */
+
+        .transaction-details {
+            display: grid;
+
+            grid-template-columns:
+                repeat(5, minmax(0, 1fr));
+
             gap: 10px;
+
+            margin-bottom: 14px;
+        }
+
+        .detail-item {
+            background: #f8fafc;
+
+            border: 1px solid #eef2f7;
+
+            border-radius: 9px;
+
+            padding: 10px 11px;
+
+            min-width: 0;
+        }
+
+        .detail-label {
+            display: block;
+
+            color: #94a3b8;
+
+            font-size: 10px;
+
+            font-weight: 650;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.35px;
+
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            color: #334155;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+        }
+
+        /* =========================
+           XAI
+        ========================= */
+
+        .xai-box {
+            background:
+                linear-gradient(
+                    135deg,
+                    #f8fbff,
+                    #f8fafc
+                );
+
+            border: 1px solid #e2e8f0;
+
+            border-radius: 10px;
+
+            padding: 12px 13px;
+
+            margin-bottom: 12px;
+        }
+
+        .xai-header {
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            margin-bottom: 6px;
+
+            color: #334155;
+
+            font-size: 11px;
+
+            font-weight: 750;
+        }
+
+        .xai-icon {
+            color: #2563eb;
+        }
+
+        .xai-text {
+            color: #64748b;
+
+            font-size: 12px;
+
+            line-height: 1.55;
+        }
+
+        /* =========================
+           HOLD VERIFY
+        ========================= */
+
+        .transaction-footer {
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 10px;
+        }
+
+        .model-info {
+            color: #94a3b8;
+
+            font-size: 10px;
+        }
+
+        .verify-btn {
+            border: none;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f59e0b,
+                    #d97706
+                );
+
+            color: #ffffff;
+
+            border-radius: 8px;
+
+            padding: 9px 13px;
+
+            font-size: 11px;
+
+            font-weight: 750;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .verify-btn:hover {
+            transform: translateY(-1px);
+
+            box-shadow:
+                0 5px 14px rgba(217, 119, 6, 0.2);
+        }
+
+        .verify-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* =========================
+           EMPTY STATE
+        ========================= */
+
+        .empty-state {
+            padding: 60px 20px;
+
+            text-align: center;
+
+            color: #94a3b8;
+        }
+
+        .empty-icon {
+            width: 52px;
+            height: 52px;
+
+            margin: 0 auto 13px;
+
+            border-radius: 14px;
+
+            background: #f8fafc;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 22px;
+        }
+
+        .empty-state h4 {
+            color: #64748b;
+
+            font-size: 14px;
+
+            margin-bottom: 5px;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+        }
+
+        /* =========================
+           LOADING
+        ========================= */
+
+        .loading {
+            padding: 40px;
+
+            text-align: center;
+
+            color: #94a3b8;
+
+            font-size: 13px;
         }
 
         .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
+            width: 22px;
+            height: 22px;
+
+            border: 2px solid #e5e7eb;
+            border-top-color: #2563eb;
+
             border-radius: 50%;
-            border-top-color: var(--accent-cyan);
+
             animation: spin 0.8s linear infinite;
+
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .footer {
-            text-align: center;
-            margin: 30px 0;
-            color: var(--text-muted);
-            font-size: 12px;
-            letter-spacing: 0.5px;
-        }
-
-        /* Responsive Layout Overhauls */
-        @media (max-width: 1024px) {
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
+            to {
+                transform: rotate(360deg);
             }
         }
 
-        @media (max-width: 640px) {
-            .features-grid {
+        /* =========================
+           TOAST
+        ========================= */
+
+        .toast-container {
+            position: fixed;
+
+            right: 24px;
+            bottom: 24px;
+
+            z-index: 9999;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 9px;
+        }
+
+        .toast {
+            min-width: 260px;
+
+            max-width: 380px;
+
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 11px;
+
+            padding: 13px 15px;
+
+            box-shadow:
+                0 15px 35px rgba(15, 23, 42, 0.12);
+
+            font-size: 12px;
+
+            color: #475569;
+
+            animation: toastIn 0.2s ease;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 1100px) {
+            .stats-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .transaction-details {
+                grid-template-columns:
+                    repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 700px) {
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .container {
+                padding: 20px 15px 40px;
+            }
+
+            .brand-text p {
+                display: none;
+            }
+
+            .brand-text h1 {
+                font-size: 17px;
+            }
+
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
-            .header {
+
+            .stream-header {
+                align-items: flex-start;
                 flex-direction: column;
-                gap: 15px;
-                text-align: center;
+            }
+
+            .stream-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .transaction-details {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .transaction-top {
+                flex-direction: column;
+            }
+
+            .badges {
+                justify-content: flex-start;
+            }
+
+            .transaction-footer {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .verify-btn {
+                width: 100%;
             }
         }
+        /* INVESTIGATION MODAL */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.investigation-modal {
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #111827;
+}
+
+.modal-header p {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.modal-close {
+    border: none;
+    background: #f1f5f9;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.investigation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.investigation-item {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+    padding: 12px;
+}
+
+.investigation-item span {
+    display: block;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.investigation-item strong {
+    color: #334155;
+    font-size: 13px;
+}
+
+.investigation-section {
+    margin-top: 20px;
+}
+
+.investigation-section h4 {
+    color: #334155;
+    margin-bottom: 10px;
+}
+
+.reason-box {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.reason-item {
+    background: white;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.decision-box {
+    margin-top: 18px;
+    padding: 15px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+}
+
+.decision-box h4 {
+    color: #c2410c;
+    margin-bottom: 7px;
+}
+
+.decision-box p {
+    color: #7c2d12;
+    font-size: 12px;
+    line-height: 1.5;
+}
     </style>
 </head>
 
 <body>
 
-    <div class="header">
-        <div class="header-brand">
-            <div class="status-dot"></div>
-            <div>
-                <h1>Zero-Day Fraud Engine</h1>
-                <p>AI-Powered Autonomous Risk & Telemetry Analyzer</p>
+    <!-- =========================
+         TOP BAR
+    ========================= -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                🛡️
             </div>
+
+            <div class="brand-text">
+
+                <h1>
+                    Zero-Day Fraud Intelligence
+                </h1>
+
+                <p>
+                    Deep Learning • Explainable AI • Real-Time Monitoring
+                </p>
+
+            </div>
+
         </div>
-        <div class="preset-controls">
-            <button class="preset-btn" type="button" onclick="loadPreset('fraud')">⚡ Load Fraud Vector</button>
-            <button class="preset-btn" type="button" onclick="loadPreset('safe')">🛡️ Load Safe Payload</button>
+
+        <div
+            id="connection-status"
+            class="connection"
+        >
+
+            <span class="connection-dot"></span>
+
+            <span id="connection-text">
+                Connecting...
+            </span>
+
         </div>
-    </div>
 
-    <div class="container">
-        <div class="console-card">
-            <form id="fraudForm">
-                
-                <!-- Section 1: Transaction Core -->
-                <div class="section-title">📦 Core Transaction Telemetry</div>
-                <div class="features-grid">
-                    <div class="field">
-                        <label>Transaction Time</label>
-                        <input type="text" id="transaction_time" required>
-                    </div>
-                    <div class="field">
-                        <label>Transaction Amount</label>
-                        <input type="number" id="transaction_amount" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>Payment Channel</label>
-                        <select id="payment_channel" required>
-                            <option value="">Select Channel</option>
-                            <option value="wallet">Wallet</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="card">Card</option>
-                            <option value="upi">UPI</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>Device Type</label>
-                        <select id="device_type" required>
-                            <option value="">Select Device</option>
-                            <option value="desktop">Desktop</option>
-                            <option value="mobile">Mobile</option>
-                            <option value="tablet">Tablet</option>
-                        </select>
-                    </div>
+    </header>
+
+
+    <!-- =========================
+         MAIN
+    ========================= -->
+
+    <main class="container">
+
+        <div class="page-header">
+
+            <h2>
+                Fraud Detection Command Center
+            </h2>
+
+            <p>
+                Monitor transactions using unsupervised Autoencoder anomaly detection and explainable risk analysis.
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             STATISTICS
+        ========================= -->
+
+        <section class="stats-grid">
+
+            <!-- TOTAL -->
+
+            <div
+                id="stat-all"
+                class="stat-card active"
+                onclick="selectFilter('all')"
+                role="button"
+                tabindex="0"
+                onkeydown="handleCardKey(event, 'all')"
+            >
+
+                <div class="stat-info">
+
+                    <span>
+                        Total Transactions
+                    </span>
+
+                    <strong id="total-count">
+                        0
+                    </strong>
+
+                    <small>
+                        All detected transactions
+                    </small>
+
                 </div>
 
-                <!-- Section 2: Identity & Profile -->
-                <div class="section-title">👤 Customer Profile & Metadata</div>
-                <div class="features-grid">
-                    <div class="field">
-                        <label>Customer ID</label>
-                        <input type="number" id="customer_id" required>
-                    </div>
-                    <div class="field">
-                        <label>Account Age (Days)</label>
-                        <input type="number" id="account_age_days" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>Credit Score Band</label>
-                        <input type="number" id="credit_score_band" required>
-                    </div>
-                    <div class="field">
-                        <label>KYC Level</label>
-                        <input type="number" id="kyc_level" required>
-                    </div>
+                <div class="stat-icon icon-blue">
+                    📊
                 </div>
 
-                <!-- Section 3: Merchant & Security Network -->
-                <div class="section-title">🌐 Merchant & Network Vectors</div>
-                <div class="features-grid">
-                    <div class="field">
-                        <label>Merchant ID</label>
-                        <input type="number" id="merchant_id" required>
-                    </div>
-                    <div class="field">
-                        <label>Merchant Risk Score</label>
-                        <input type="number" id="merchant_risk_score" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>IP Risk Score</label>
-                        <input type="number" id="ip_risk_score" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>Post-Auth Risk Score</label>
-                        <input type="number" id="post_auth_risk_score" step="any" required>
-                    </div>
+            </div>
+
+
+            <!-- APPROVED -->
+
+            <div
+                id="stat-approved"
+                class="stat-card"
+                onclick="selectFilter('approved')"
+                role="button"
+                tabindex="0"
+                onkeydown="handleCardKey(event, 'approved')"
+            >
+
+                <div class="stat-info">
+
+                    <span>
+                        Approved
+                    </span>
+
+                    <strong id="approved-count">
+                        0
+                    </strong>
+
+                    <small>
+                        Transactions cleared
+                    </small>
+
                 </div>
 
-                <!-- Section 4: Behavioral Velocity & Anomalies -->
-                <div class="section-title">📊 Behavioral Velocity & Deviations</div>
-                <div class="features-grid">
-                    <div class="field">
-                        <label>International Txn</label>
-                        <select id="is_international" required>
-                            <option value="">Select</option>
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>Average Monthly Spend</label>
-                        <input type="number" id="avg_monthly_spend" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>Txn Count (1H)</label>
-                        <input type="number" id="txn_count_1h" required>
-                    </div>
-                    <div class="field">
-                        <label>Txn Count (24H)</label>
-                        <input type="number" id="txn_count_24h" required>
-                    </div>
-                    <div class="field">
-                        <label>Failed Txns (24H)</label>
-                        <input type="number" id="failed_txn_count_24h" required>
-                    </div>
-                    <div class="field">
-                        <label>Geo Distance From Last</label>
-                        <input type="number" id="geo_distance_from_last_txn" step="any" required>
-                    </div>
-                    <div class="field">
-                        <label>Amount Deviation (Mean)</label>
-                        <input type="number" id="amount_deviation_from_user_mean" step="any" required>
-                    </div>
+                <div class="stat-icon icon-green">
+                    ✓
                 </div>
 
-                <div class="action-panel">
-                    <button class="execute-btn" type="submit">
-                        RUN RISK ASSESSMENT PIPELINE
+            </div>
+
+
+            <!-- HOLD -->
+
+            <div
+                id="stat-hold"
+                class="stat-card"
+                onclick="selectFilter('hold')"
+                role="button"
+                tabindex="0"
+                onkeydown="handleCardKey(event, 'hold')"
+            >
+
+                <div class="stat-info">
+
+                    <span>
+                        Hold & Verify
+                    </span>
+
+                    <strong id="hold-count">
+                        0
+                    </strong>
+
+                    <small>
+                        Verification required
+                    </small>
+
+                </div>
+
+                <div class="stat-icon icon-orange">
+                    ⏳
+                </div>
+
+            </div>
+
+
+            <!-- HIGH RISK -->
+
+            <div
+                id="stat-high"
+                class="stat-card"
+                onclick="selectFilter('high')"
+                role="button"
+                tabindex="0"
+                onkeydown="handleCardKey(event, 'high')"
+            >
+
+                <div class="stat-info">
+
+                    <span>
+                        High Risk
+                    </span>
+
+                    <strong id="high-count">
+                        0
+                    </strong>
+
+                    <small>
+                        High-risk transactions
+                    </small>
+
+                </div>
+
+                <div class="stat-icon icon-red">
+                    ⚠
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             TRANSACTION STREAM
+        ========================= -->
+
+        <section class="stream-card">
+
+            <div class="stream-header">
+
+                <div class="stream-title">
+
+                    <div class="stream-title-icon">
+                        ⚡
+                    </div>
+
+                    <div>
+
+                        <h3 id="stream-title">
+                            Live AI Transaction Stream
+                        </h3>
+
+                        <p id="stream-description">
+                            Real-time anomaly detection and explainable risk analysis
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stream-actions">
+
+                    <span
+                        id="filter-badge"
+                        class="filter-badge"
+                    >
+                        All Transactions
+                    </span>
+
+                    <button
+                        class="clear-btn"
+                        onclick="clearStream()"
+                    >
+                        Clear View
                     </button>
+
                 </div>
 
-            </form>
+            </div>
 
-            <div id="result"></div>
-        </div>
-    </div>
 
-    <div class="footer">
-        Zero-Day Enterprise Fraud Intelligence Platform &copy; 2026 | Secure Core v4.8
-    </div>
+            <div id="transaction-stream">
+
+                <div class="loading">
+
+                    <div class="spinner"></div>
+
+                    Loading transactions...
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         TOAST
+    ========================= -->
+
+    <div
+        id="toast-container"
+        class="toast-container"
+    ></div>
+
 
     <script>
-        // Preset simulation data loader for expert diagnostic evaluations
-        function loadPreset(type) {
-            if (type === 'fraud') {
-                document.getElementById("transaction_time").value = "2026-03-30 02:14:05.10293";
-                document.getElementById("customer_id").value = "9982";
-                document.getElementById("merchant_id").value = "4041";
-                document.getElementById("account_age_days").value = "2";
-                document.getElementById("credit_score_band").value = "310";
-                document.getElementById("kyc_level").value = "1";
-                document.getElementById("avg_monthly_spend").value = "350.00";
-                document.getElementById("merchant_risk_score").value = "98.5";
-                document.getElementById("transaction_amount").value = "125000.00";
-                document.getElementById("payment_channel").value = "wallet";
-                document.getElementById("device_type").value = "mobile";
-                document.getElementById("is_international").value = "1";
-                document.getElementById("ip_risk_score").value = "99.1";
-                document.getElementById("txn_count_1h").value = "14";
-                document.getElementById("txn_count_24h").value = "28";
-                document.getElementById("failed_txn_count_24h").value = "6";
-                document.getElementById("geo_distance_from_last_txn").value = "4500.5";
-                document.getElementById("amount_deviation_from_user_mean").value = "124650.0";
-                document.getElementById("post_auth_risk_score").value = "97.0";
-            } else {
-                document.getElementById("transaction_time").value = "2026-03-30 14:22:10.88412";
-                document.getElementById("customer_id").value = "1042";
-                document.getElementById("merchant_id").value = "109";
-                document.getElementById("account_age_days").value = "730";
-                document.getElementById("credit_score_band").value = "780";
-                document.getElementById("kyc_level").value = "3";
-                document.getElementById("avg_monthly_spend").value = "1250.00";
-                document.getElementById("merchant_risk_score").value = "2.1";
-                document.getElementById("transaction_amount").value = "45.00";
-                document.getElementById("payment_channel").value = "card";
-                document.getElementById("device_type").value = "desktop";
-                document.getElementById("is_international").value = "0";
-                document.getElementById("ip_risk_score").value = "1.2";
-                document.getElementById("txn_count_1h").value = "1";
-                document.getElementById("txn_count_24h").value = "3";
-                document.getElementById("failed_txn_count_24h").value = "0";
-                document.getElementById("geo_distance_from_last_txn").value = "2.4";
-                document.getElementById("amount_deviation_from_user_mean").value = "5.0";
-                document.getElementById("post_auth_risk_score").value = "1.0";
+
+        /* =====================================================
+           GLOBAL STATE
+        ===================================================== */
+
+        let socket = null;
+
+        let currentFilter = "all";
+
+        let transactionCount = 0;
+
+
+        /* =====================================================
+           SAFE HTML ESCAPE
+        ===================================================== */
+
+        function escapeHtml(value) {
+
+            if (value === null || value === undefined) {
+                return "";
+            }
+
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        /* =====================================================
+           NUMBER FORMAT
+        ===================================================== */
+
+        function formatNumber(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return "0";
+            }
+
+            return number.toLocaleString();
+        }
+
+
+        function formatAmount(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return "₹0.00";
+            }
+
+            return "₹" + number.toLocaleString(
+                "en-IN",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }
+            );
+        }
+
+
+        function formatError(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return "N/A";
+            }
+
+            return number.toFixed(4);
+        }
+
+
+        function formatThreshold(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return "N/A";
+            }
+
+            return number.toFixed(4);
+        }
+
+
+        /* =====================================================
+           TIME
+        ===================================================== */
+
+        function getTransactionTime(data) {
+
+            if (data.created_at) {
+                return escapeHtml(data.created_at);
+            }
+
+            if (data.transaction_time) {
+                return escapeHtml(data.transaction_time);
+            }
+
+            return new Date().toLocaleTimeString();
+        }
+
+
+        /* =====================================================
+           RISK CLASS
+        ===================================================== */
+
+        function getRiskClass(risk) {
+
+            const value = String(risk || "")
+                .toLowerCase();
+
+            if (value === "high") {
+                return "high-risk";
+            }
+
+            if (value === "medium") {
+                return "medium-risk";
+            }
+
+            return "low-risk";
+        }
+
+
+        /* =====================================================
+           RISK BADGE
+        ===================================================== */
+
+        function getRiskBadge(risk) {
+
+            const value = String(risk || "Low");
+
+            const lower = value.toLowerCase();
+
+            let className = "badge-low";
+
+            if (lower === "high") {
+                className = "badge-high";
+            }
+            else if (lower === "medium") {
+                className = "badge-medium";
+            }
+
+            return `
+                <span class="badge ${className}">
+                    ${escapeHtml(value)} Risk
+                </span>
+            `;
+        }
+
+
+        /* =====================================================
+           STATUS BADGE
+        ===================================================== */
+
+        function getStatusBadge(status) {
+
+            const value = String(
+                status || "Unknown"
+            );
+
+            const lower = value.toLowerCase();
+
+            if (lower.includes("hold")) {
+
+                return `
+                    <span class="badge badge-hold">
+                        Hold & Verify
+                    </span>
+                `;
+            }
+
+            if (lower.includes("approved")) {
+
+                return `
+                    <span class="badge badge-approved">
+                        Approved
+                    </span>
+                `;
+            }
+
+            return `
+                <span class="badge badge-medium">
+                    ${escapeHtml(value)}
+                </span>
+            `;
+        }
+
+
+        /* =====================================================
+           XAI TEXT
+        ===================================================== */
+
+        function getXaiText(data) {
+
+            if (
+                data.xai_explanation !== undefined &&
+                data.xai_explanation !== null &&
+                String(data.xai_explanation).trim() !== ""
+            ) {
+
+                return escapeHtml(
+                    data.xai_explanation
+                );
+
+            }
+
+            if (
+                data.xai !== undefined &&
+                data.xai !== null &&
+                String(data.xai).trim() !== ""
+            ) {
+
+                return escapeHtml(
+                    data.xai
+                );
+
+            }
+
+            return "No explanation available for this transaction.";
+        }
+
+
+        /* =====================================================
+           VERIFY BUTTON
+        ===================================================== */
+
+        function getVerifyButton(data) {
+
+            const status = String(
+                data.transaction_status ||
+                data.status ||
+                ""
+            ).toLowerCase();
+
+            if (!status.includes("hold")) {
+                return "";
+            }
+
+            const transactionId =
+                encodeURIComponent(
+                    String(
+                        data.transaction_id || ""
+                    )
+                );
+
+            return `
+                <button
+                    class="verify-btn"
+                    onclick="verifyTransaction('${transactionId}')"
+                >
+                    🔐 Hold & Verify
+                </button>
+            `;
+        }
+
+
+        /* =====================================================
+           CREATE TRANSACTION CARD
+        ===================================================== */
+
+        function createTransactionCard(data) {
+
+            const transactionId =
+                data.transaction_id ?? "N/A";
+
+            const customerId =
+                data.customer_id ?? "N/A";
+
+            const merchantId =
+                data.merchant_id ?? "N/A";
+
+            const amount =
+                data.transaction_amount ?? 0;
+
+            const status =
+                data.transaction_status ||
+                data.status ||
+                "Unknown";
+
+            const risk =
+                data.risk_level ||
+                data.risk ||
+                "Low";
+
+            const reconstructionError =
+                data.reconstruction_error;
+
+            const threshold =
+                data.threshold;
+
+            const riskClass =
+                getRiskClass(risk);
+
+            return `
+                <article
+                    class="transaction-card ${riskClass}"
+                    data-transaction-id="${escapeHtml(transactionId)}"
+                >
+
+                    <div class="transaction-top">
+
+                        <div class="transaction-heading">
+
+                            <div class="transaction-id">
+                                Transaction #${escapeHtml(transactionId)}
+                            </div>
+
+                            <div class="transaction-time">
+                                ${getTransactionTime(data)}
+                            </div>
+
+                        </div>
+
+
+                        <div class="badges">
+
+                            ${getStatusBadge(status)}
+
+                            ${getRiskBadge(risk)}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="transaction-details">
+
+                        <div class="detail-item">
+
+                            <span class="detail-label">
+                                Customer ID
+                            </span>
+
+                            <span class="detail-value">
+                                ${escapeHtml(customerId)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span class="detail-label">
+                                Merchant ID
+                            </span>
+
+                            <span class="detail-value">
+                                ${escapeHtml(merchantId)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span class="detail-label">
+                                Amount
+                            </span>
+
+                            <span class="detail-value">
+                                ${formatAmount(amount)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span class="detail-label">
+                                Reconstruction Error
+                            </span>
+
+                            <span class="detail-value">
+                                ${formatError(reconstructionError)}
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span class="detail-label">
+                                Threshold
+                            </span>
+
+                            <span class="detail-value">
+                                ${formatThreshold(threshold)}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="xai-box">
+
+                        <div class="xai-header">
+
+                            <span class="xai-icon">
+                                ✨
+                            </span>
+
+                            Explainable AI Analysis
+
+                        </div>
+
+                        <div class="xai-text">
+                            ${getXaiText(data)}
+                        </div>
+
+                    </div>
+
+
+                    <div class="transaction-footer">
+
+                        <div class="model-info">
+
+                            Autoencoder anomaly detection
+                            •
+                            ${risk === "High"
+                                ? "Anomaly detected"
+                                : "Within learned pattern"}
+
+                        </div>
+
+                        <button
+    class="clear-btn"
+    onclick="viewInvestigation('${encodeURIComponent(String(transactionId))}')"
+>
+    🔍 View Details
+</button>
+
+${getVerifyButton(data)}
+
+                    </div>
+
+                </article>
+            `;
+        }
+
+
+        /* =====================================================
+           RENDER DATABASE TRANSACTIONS
+        ===================================================== */
+
+        function renderTransactions(transactions) {
+
+            const stream =
+                document.getElementById(
+                    "transaction-stream"
+                );
+
+            if (!Array.isArray(transactions)) {
+                transactions = [];
+            }
+
+
+            if (transactions.length === 0) {
+
+                stream.innerHTML = `
+                    <div class="empty-state">
+
+                        <div class="empty-icon">
+                            📭
+                        </div>
+
+                        <h4>
+                            No transactions found
+                        </h4>
+
+                        <p>
+                            Transactions matching this filter will appear here.
+                        </p>
+
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            stream.innerHTML =
+                transactions
+                    .map(createTransactionCard)
+                    .join("");
+        }
+
+
+        /* =====================================================
+           LOAD TRANSACTIONS FROM DATABASE
+        ===================================================== */
+
+        async function loadTransactions(
+            filter = "all"
+        ) {
+
+            const stream =
+                document.getElementById(
+                    "transaction-stream"
+                );
+
+            stream.innerHTML = `
+                <div class="loading">
+
+                    <div class="spinner"></div>
+
+                    Loading transactions...
+
+                </div>
+            `;
+
+            try {
+
+                const response =
+                    await fetch(
+                        `/api/transactions?type=${encodeURIComponent(filter)}`
+                    );
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Unable to load transactions."
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                renderTransactions(
+                    data.transactions || []
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Transaction loading error:",
+                    error
+                );
+
+                stream.innerHTML = `
+                    <div class="empty-state">
+
+                        <div class="empty-icon">
+                            ⚠️
+                        </div>
+
+                        <h4>
+                            Unable to load transactions
+                        </h4>
+
+                        <p>
+                            ${escapeHtml(error.message)}
+                        </p>
+
+                    </div>
+                `;
             }
         }
 
-        // Form Submission Pipeline & Telemetry Handling
-        document.getElementById("fraudForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
 
-            const resultBox = document.getElementById("result");
-            resultBox.innerHTML = `<div style="display:flex; align-items:center; gap:12px;"><div class="spinner"></div> Executing Deep Neural Network Inference...</div>`;
-            resultBox.className = "hold-result";
+        /* =====================================================
+           STAT API HELPER
+        ===================================================== */
 
-            const payload = {
-                transaction_time: document.getElementById("transaction_time").value,
-                customer_id: Number(document.getElementById("customer_id").value),
-                merchant_id: Number(document.getElementById("merchant_id").value),
-                account_age_days: Number(document.getElementById("account_age_days").value),
-                credit_score_band: Number(document.getElementById("credit_score_band").value),
-                kyc_level: Number(document.getElementById("kyc_level").value),
-                avg_monthly_spend: Number(document.getElementById("avg_monthly_spend").value),
-                merchant_risk_score: Number(document.getElementById("merchant_risk_score").value),
-                transaction_amount: Number(document.getElementById("transaction_amount").value),
-                payment_channel: document.getElementById("payment_channel").value,
-                device_type: document.getElementById("device_type").value,
-                is_international: Number(document.getElementById("is_international").value),
-                ip_risk_score: Number(document.getElementById("ip_risk_score").value),
-                txn_count_1h: Number(document.getElementById("txn_count_1h").value),
-                txn_count_24h: Number(document.getElementById("txn_count_24h").value),
-                failed_txn_count_24h: Number(document.getElementById("failed_txn_count_24h").value),
-                geo_distance_from_last_txn: Number(document.getElementById("geo_distance_from_last_txn").value),
-                amount_deviation_from_user_mean: Number(document.getElementById("amount_deviation_from_user_mean").value),
-                post_auth_risk_score: Number(document.getElementById("post_auth_risk_score").value)
-            };
+        async function getTransactionCount(
+            filter
+        ) {
 
             try {
-                const response = await fetch("/predict", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+
+                const response =
+                    await fetch(
+                        `/api/transactions?type=${encodeURIComponent(filter)}`
+                    );
+
+                if (!response.ok) {
+                    return 0;
+                }
+
+                const data =
+                    await response.json();
+
+                return Number(
+                    data.count || 0
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Count loading error:",
+                    error
+                );
+
+                return 0;
+            }
+        }
+
+
+        /* =====================================================
+           REFRESH STATISTICS
+        ===================================================== */
+
+        async function refreshDashboardStats() {
+
+            const [
+                total,
+                approved,
+                hold,
+                high
+            ] = await Promise.all([
+
+                getTransactionCount("all"),
+
+                getTransactionCount("approved"),
+
+                getTransactionCount("hold"),
+
+                getTransactionCount("high")
+
+            ]);
+
+
+            document.getElementById(
+                "total-count"
+            ).textContent =
+                formatNumber(total);
+
+
+            document.getElementById(
+                "approved-count"
+            ).textContent =
+                formatNumber(approved);
+
+
+            document.getElementById(
+                "hold-count"
+            ).textContent =
+                formatNumber(hold);
+
+
+            document.getElementById(
+                "high-count"
+            ).textContent =
+                formatNumber(high);
+        }
+
+
+        /* =====================================================
+           FILTER TITLES
+        ===================================================== */
+
+        function updateFilterUI(filter) {
+
+            const titles = {
+
+                all: {
+                    title: "Live AI Transaction Stream",
+                    description:
+                        "Real-time anomaly detection and explainable risk analysis",
+                    badge: "All Transactions"
+                },
+
+                approved: {
+                    title: "Approved Transactions",
+                    description:
+                        "Transactions cleared by the fraud detection pipeline",
+                    badge: "Approved"
+                },
+
+                hold: {
+                    title: "Hold & Verify Transactions",
+                    description:
+                        "Transactions requiring additional verification",
+                    badge: "Hold & Verify"
+                },
+
+                high: {
+                    title: "High-Risk Alerts",
+                    description:
+                        "Transactions classified as high risk by the anomaly detector",
+                    badge: "High Risk"
+                }
+
+            };
+
+
+            const config =
+                titles[filter] ||
+                titles.all;
+
+
+            document.getElementById(
+                "stream-title"
+            ).textContent =
+                config.title;
+
+
+            document.getElementById(
+                "stream-description"
+            ).textContent =
+                config.description;
+
+
+            document.getElementById(
+                "filter-badge"
+            ).textContent =
+                config.badge;
+
+
+            document
+                .querySelectorAll(".stat-card")
+                .forEach(card => {
+
+                    card.classList.remove(
+                        "active"
+                    );
+
                 });
 
-                const result = await response.json();
 
-                if (result.error) {
-                    resultBox.className = "hold-result";
-                    resultBox.innerHTML = `<div class="result-header">⚠️ API Exception</div><p>${result.error}</p>`;
-                    return;
+            const activeCard =
+                document.getElementById(
+                    `stat-${filter}`
+                );
+
+            if (activeCard) {
+
+                activeCard.classList.add(
+                    "active"
+                );
+
+            }
+        }
+
+
+        /* =====================================================
+           SELECT FILTER
+        ===================================================== */
+
+        async function selectFilter(filter) {
+
+            currentFilter = filter;
+
+            updateFilterUI(filter);
+
+            await loadTransactions(filter);
+        }
+
+
+        /* =====================================================
+           KEYBOARD SUPPORT
+        ===================================================== */
+
+        function handleCardKey(
+            event,
+            filter
+        ) {
+
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+
+                event.preventDefault();
+
+                selectFilter(filter);
+            }
+        }
+
+
+        /* =====================================================
+           ADD LIVE TRANSACTION
+        ===================================================== */
+
+        function addLiveTransaction(data) {
+
+            if (currentFilter !== "all") {
+                return;
+            }
+
+
+            const stream =
+                document.getElementById(
+                    "transaction-stream"
+                );
+
+
+            const empty =
+                stream.querySelector(
+                    ".empty-state"
+                );
+
+            if (empty) {
+                stream.innerHTML = "";
+            }
+
+
+            const loading =
+                stream.querySelector(
+                    ".loading"
+                );
+
+            if (loading) {
+                stream.innerHTML = "";
+            }
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+            card.innerHTML =
+                createTransactionCard(data);
+
+
+            const transactionElement =
+                card.firstElementChild;
+
+
+            stream.prepend(
+                transactionElement
+            );
+
+
+            transactionCount++;
+
+
+            /*
+             * Keep the browser view lightweight.
+             * Database remains untouched.
+             */
+
+            while (
+                stream.children.length > 100
+            ) {
+
+                stream.removeChild(
+                    stream.lastElementChild
+                );
+            }
+        }
+
+
+        /* =====================================================
+           CLEAR VISIBLE STREAM
+        ===================================================== */
+
+        function clearStream() {
+
+            const stream =
+                document.getElementById(
+                    "transaction-stream"
+                );
+
+
+            stream.innerHTML = `
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        🧹
+                    </div>
+
+                    <h4>
+                        Stream view cleared
+                    </h4>
+
+                    <p>
+                        Database records are safe. Use a filter card or wait for the next live transaction.
+                    </p>
+
+                </div>
+            `;
+
+            showToast(
+                "Stream view cleared. Database records were not deleted."
+            );
+        }
+
+
+        /* =====================================================
+           HOLD & VERIFY
+        ===================================================== */
+
+        function verifyTransaction(
+            encodedTransactionId
+        ) {
+
+            const transactionId =
+                decodeURIComponent(
+                    encodedTransactionId
+                );
+
+
+            showToast(
+                `Verification requested for transaction #${transactionId}`
+            );
+
+
+            /*
+             * NEXT PHASE:
+             *
+             * Android BiometricPrompt
+             *
+             * The Android application will verify
+             * the user's registered fingerprint/face
+             * through the phone OS.
+             *
+             * Raw biometric data will NOT be sent
+             * to this Flask application.
+             */
+
+            console.log(
+                "Biometric verification requested:",
+                transactionId
+            );
+        }
+
+
+        /* =====================================================
+           TOAST
+        ===================================================== */
+
+        function showToast(message) {
+
+            const container =
+                document.getElementById(
+                    "toast-container"
+                );
+
+
+            const toast =
+                document.createElement(
+                    "div"
+                );
+
+            toast.className = "toast";
+
+            toast.textContent = message;
+
+
+            container.appendChild(
+                toast
+            );
+
+
+            setTimeout(() => {
+
+                toast.style.opacity = "0";
+
+                toast.style.transform =
+                    "translateY(10px)";
+
+                setTimeout(() => {
+
+                    toast.remove();
+
+                }, 200);
+
+            }, 2800);
+        }
+
+
+        /* =====================================================
+           SOCKET.IO
+        ===================================================== */
+
+        function initializeSocket() {
+
+            socket =
+                io();
+
+
+            socket.on(
+                "connect",
+                function() {
+
+                    console.log(
+                        "Socket.IO connected."
+                    );
+
+
+                    const status =
+                        document.getElementById(
+                            "connection-status"
+                        );
+
+                    const text =
+                        document.getElementById(
+                            "connection-text"
+                        );
+
+
+                    status.classList.add(
+                        "connected"
+                    );
+
+                    text.textContent =
+                        "Live Connected";
+
                 }
+            );
 
-                if (result.risk_level === "High") {
-                    resultBox.className = "hold-result";
-                    
-                    let reasonsHtml = "";
-                    if (result.xai_explanation) {
-                        const reasons = result.xai_explanation.split(" | ");
-                        reasonsHtml = "<ul style='margin: 10px 0 0; padding-left: 18px; font-size: 13px;'>";
-                        reasons.forEach(reason => {
-                            reasonsHtml += `<li style='margin-bottom: 5px;'>${reason}</li>`;
-                        });
-                        reasonsHtml += "</ul>";
+
+            socket.on(
+                "disconnect",
+                function() {
+
+                    console.log(
+                        "Socket.IO disconnected."
+                    );
+
+
+                    const status =
+                        document.getElementById(
+                            "connection-status"
+                        );
+
+                    const text =
+                        document.getElementById(
+                            "connection-text"
+                        );
+
+
+                    status.classList.remove(
+                        "connected"
+                    );
+
+                    text.textContent =
+                        "Disconnected";
+
+                }
+            );
+
+
+            socket.on(
+                "connect_error",
+                function(error) {
+
+                    console.error(
+                        "Socket connection error:",
+                        error
+                    );
+
+
+                    const status =
+                        document.getElementById(
+                            "connection-status"
+                        );
+
+                    const text =
+                        document.getElementById(
+                            "connection-text"
+                        );
+
+
+                    status.classList.remove(
+                        "connected"
+                    );
+
+                    text.textContent =
+                        "Connection Error";
+
+                }
+            );
+
+
+            socket.on(
+                "new_transaction",
+                function(data) {
+
+                    console.log(
+                        "New transaction:",
+                        data
+                    );
+
+
+                    /*
+                     * Refresh database-backed
+                     * statistics.
+                     */
+
+                    refreshDashboardStats();
+
+
+                    /*
+                     * Only append live event when
+                     * viewing the All Transactions
+                     * stream.
+                     */
+
+                    if (
+                        currentFilter === "all"
+                    ) {
+
+                        addLiveTransaction(
+                            data
+                        );
+
                     }
 
-                    resultBox.innerHTML = `
-                        <div class="result-header">🚨 [ALERT] ${result.transaction_status}</div>
-                        <div style="font-size: 14px; margin-bottom: 6px;">Risk Level: <strong>${result.risk_level}</strong></div>
-                        <div style="font-size: 14px; margin-bottom: 12px;">Anomaly Reconstruction Error: <strong>${result.reconstruction_error.toFixed(4)}</strong></div>
-                        <hr style="border: 0; border-top: 1px solid rgba(239, 68, 68, 0.3); margin: 12px 0;">
-                        <div style="font-size: 13px; font-weight: 600; color: #f87171;">XAI Factor Diagnostics:</div>
-                        ${reasonsHtml}
-                    `;
-                } else {
-                    resultBox.className = "approved-result";
-                    resultBox.innerHTML = `
-                        <div class="result-header">✅ [SECURE] ${result.transaction_status}</div>
-                        <div style="font-size: 14px; margin-bottom: 6px;">Risk Level: <strong>${result.risk_level}</strong></div>
-                        <div style="font-size: 14px;">Anomaly Reconstruction Error: <strong>${result.reconstruction_error.toFixed(4)}</strong></div>
-                    `;
                 }
+            );
+        }
 
-            } catch (err) {
-                resultBox.className = "hold-result";
-                resultBox.innerHTML = `<div class="result-header">❌ Gateway Connection Error</div><p>Failed to establish socket bridge with backend Flask service.</p>`;
+
+        /* =====================================================
+           PAGE INITIALIZATION
+        ===================================================== */
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            async function() {
+
+                console.log(
+                    "Zero-Day Fraud Intelligence dashboard starting..."
+                );
+
+
+                updateFilterUI(
+                    "all"
+                );
+
+
+                /*
+                 * Load persistent database
+                 * statistics.
+                 */
+
+                await refreshDashboardStats();
+
+
+                /*
+                 * Load persistent database
+                 * transaction history.
+                 */
+
+                await loadTransactions(
+                    "all"
+                );
+
+
+                /*
+                 * Start Socket.IO live stream.
+                 */
+
+                initializeSocket();
+
             }
-        });
+        );
+        /* =========================
+   VIEW TRANSACTION DETAILS
+========================= */
 
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+async function viewInvestigation(id) {
 
-<script>
-    const socket = io();
+    id = decodeURIComponent(id);
 
-    socket.on('connect', function() {
-        console.log("Connected to Real-Time Server! 🟢");
-    });
+    const modal =
+        document.getElementById("investigation-modal");
 
-    socket.on('new_transaction', function(data) {
-        console.log("🔥 NEW LIVE DATA:", data.message);
-    });
-</script>
+    const content =
+        document.getElementById("investigation-content");
+
+    modal.classList.add("show");
+
+    content.innerHTML = `
+        <p style="text-align:center;">
+            Loading transaction details...
+        </p>
+    `;
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/transactions/" +
+                encodeURIComponent(id)
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Transaction not found"
+            );
+        }
+
+        const error =
+            Number(data.reconstruction_error);
+
+        const threshold =
+            Number(data.threshold);
+
+        const isAnomaly =
+            error > threshold;
+
+        let reasons = [];
+
+        if (data.xai_explanation) {
+
+            reasons =
+                String(data.xai_explanation)
+                .split("|")
+                .map(x => x.trim())
+                .filter(x => x);
+
+        }
+
+        if (reasons.length === 0) {
+
+            reasons.push(
+                isAnomaly
+                ? "The transaction pattern is different from the legitimate patterns learned by the Autoencoder."
+                : "The transaction remains within the learned legitimate transaction pattern."
+            );
+
+        }
+
+        content.innerHTML = `
+
+            <div class="investigation-grid">
+
+                <div class="investigation-item">
+                    <span>Transaction ID</span>
+                    <strong>${escapeHtml(data.transaction_id)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Customer ID</span>
+                    <strong>${escapeHtml(data.customer_id)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Merchant ID</span>
+                    <strong>${escapeHtml(data.merchant_id)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Amount</span>
+                    <strong>${formatAmount(data.transaction_amount)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Risk Level</span>
+                    <strong>${escapeHtml(data.risk_level)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Status</span>
+                    <strong>${escapeHtml(data.transaction_status)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Reconstruction Error</span>
+                    <strong>${error.toFixed(4)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Threshold</span>
+                    <strong>${threshold.toFixed(4)}</strong>
+                </div>
+
+                <div class="investigation-item">
+                    <span>Decision</span>
+                    <strong>
+                        ${isAnomaly
+                            ? "Anomaly Detected"
+                            : "Normal"}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="investigation-section">
+
+                <h4>
+                    🧠 Why was this transaction flagged?
+                </h4>
+
+                <div class="reason-box">
+
+                    <p style="
+                        font-size:13px;
+                        color:#475569;
+                        line-height:1.5;
+                    ">
+
+                        ${
+                            isAnomaly
+
+                            ? "The transaction was placed on Hold & Verify because its overall pattern differs from the legitimate transaction patterns learned by the Autoencoder."
+
+                            : "The transaction is within the learned legitimate pattern."
+                        }
+
+                    </p>
+
+
+                    ${reasons.map(reason => `
+
+                        <div class="reason-item">
+
+                            🔴 ${escapeHtml(reason)}
+
+                        </div>
+
+                    `).join("")}
+
+                </div>
+
+            </div>
+
+
+            <div class="decision-box">
+
+                <h4>
+
+                    ${
+                        isAnomaly
+                        ? "🔴 HOLD & VERIFY"
+                        : "🟢 APPROVED"
+                    }
+
+                </h4>
+
+                <p>
+
+                    Reconstruction error:
+
+                    <strong>
+                        ${error.toFixed(4)}
+                    </strong>
+
+                    <br>
+
+                    Detection threshold:
+
+                    <strong>
+                        ${threshold.toFixed(4)}
+                    </strong>
+
+                    <br><br>
+
+                    ${
+                        isAnomaly
+
+                        ? "Because the anomaly score crossed the calibrated threshold, the system requests additional verification instead of automatically declaring the transaction fraudulent."
+
+                        : "The transaction did not cross the anomaly threshold."
+                    }
+
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+    catch (error) {
+
+        content.innerHTML = `
+            <p style="color:red;">
+                ${escapeHtml(error.message)}
+            </p>
+        `;
+
+    }
+}
+
+
+/* =========================
+   CLOSE POPUP
+========================= */
+
+function closeInvestigation() {
+
+    document
+        .getElementById("investigation-modal")
+        .classList.remove("show");
+
+}
+
+    </script>
+    <!-- INVESTIGATION POPUP -->
+
+<div
+    id="investigation-modal"
+    class="modal-overlay"
+    onclick="closeInvestigation()"
+>
+
+    <div
+        class="investigation-modal"
+        onclick="event.stopPropagation()"
+    >
+
+        <div class="modal-header">
+
+            <div>
+
+                <h3>
+                    🔍 Transaction Investigation
+                </h3>
+
+                <p>
+                    Detailed AI analysis
+                </p>
+
+            </div>
+
+            <button
+                class="modal-close"
+                onclick="closeInvestigation()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="investigation-content"
+            class="modal-body"
+        >
+
+        </div>
+
+    </div>
+
+</div>
+
 </body>
 </html>
