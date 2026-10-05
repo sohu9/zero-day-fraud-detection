@@ -9,9 +9,16 @@ from database import (
     init_database,
     save_transaction,
     get_transactions,
-    get_transaction
+    get_transaction,
+    create_customer,
+    get_customer,
+    register_device,
+    get_customer_devices,
+    get_customer_transactions,
+    save_verification_event,
+    get_verification_events,
+    update_verification_status
 )
-
 from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -415,16 +422,30 @@ def analyze_transaction(data):
         )
 
     return {
-        "transaction_id": data.get("transaction_id"),
-        "customer_id": data.get("customer_id"),
-        "merchant_id": data.get("merchant_id"),
-        "transaction_amount": data.get("transaction_amount"),
-        "transaction_status": status,
-        "risk_level": risk,
-        "reconstruction_error": mse,
-        "threshold": THRESHOLD,
-        "xai_explanation": xai_explanation
-    }
+    "transaction_id": data.get("transaction_id"),
+    "customer_id": data.get("customer_id"),
+    "merchant_id": data.get("merchant_id"),
+    "transaction_amount": data.get("transaction_amount"),
+
+    "transaction_status": status,
+    "risk_level": risk,
+    "reconstruction_error": mse,
+    "threshold": THRESHOLD,
+    "xai_explanation": xai_explanation,
+
+    # Transaction context
+    "transaction_time": data.get("transaction_time"),
+    "payment_channel": data.get("payment_channel"),
+    "device_type": data.get("device_type"),
+    "is_international": data.get("is_international"),
+    "ip_risk_score": data.get("ip_risk_score"),
+    "txn_count_1h": data.get("txn_count_1h"),
+    "txn_count_24h": data.get("txn_count_24h"),
+    "failed_txn_count_24h": data.get("failed_txn_count_24h"),
+    "geo_distance_from_last_txn": data.get("geo_distance_from_last_txn"),
+    "amount_deviation_from_user_mean": data.get("amount_deviation_from_user_mean"),
+    "post_auth_risk_score": data.get("post_auth_risk_score")
+}
 
 
 # ============================================================
@@ -569,9 +590,104 @@ def predict():
         return jsonify({
             "error": str(e)
         }), 400
+
+@app.route("/api/transactions/<transaction_id>/verify", methods=["POST"])
+def api_start_verification(transaction_id):
+    try:
+        transaction = get_transaction(transaction_id)
+
+        if transaction is None:
+            return jsonify({
+                "error": "Transaction not found."
+            }), 404
+
+        if transaction.get("transaction_status") != "Hold & Verify 🚨":
+            return jsonify({
+                "error": "Transaction does not require verification."
+            }), 400
+
+        verification_id = save_verification_event(
+            transaction_id=transaction_id,
+            customer_id=transaction.get("customer_id"),
+            verification_method="Android BiometricPrompt",
+            verification_status="PENDING"
+        )
+
+        return jsonify({
+            "success": True,
+            "transaction_id": transaction_id,
+            "customer_id": transaction.get("customer_id"),
+            "verification_id": verification_id,
+            "verification_method": "Android BiometricPrompt",
+            "verification_status": "PENDING"
+        })
+
+    except Exception as e:
+        print("Verification start error:", e)
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+@app.route("/api/transactions/<transaction_id>/verifications", methods=["GET"])
+def api_get_verifications(transaction_id):
+    try:
+        transaction = get_transaction(transaction_id)
+
+        if transaction is None:
+            return jsonify({
+                "error": "Transaction not found."
+            }), 404
+
+        events = get_verification_events(transaction_id)
+
+        return jsonify({
+            "transaction_id": transaction_id,
+            "count": len(events),
+            "verification_events": events
+        })
+
+    except Exception as e:
+        print("Verification history error:", e)
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+    
 # ============================================================
 # TRANSACTION HISTORY APIs
 # ============================================================
+
+@app.route("/api/customers", methods=["POST"])
+def api_create_customer():
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No customer data received."}), 400
+
+        customer_id = data.get("customer_id")
+
+        if not customer_id:
+            return jsonify({"error": "customer_id is required."}), 400
+
+        create_customer(
+            customer_id=customer_id,
+            account_reference=data.get("account_reference"),
+            full_name=data.get("full_name"),
+            email=data.get("email"),
+            phone=data.get("phone")
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Customer registered successfully.",
+            "customer_id": str(customer_id)
+        })
+
+    except Exception as e:
+        print("Customer registration error:", e)
+        return jsonify({"error": str(e)}), 400
+    
 
 @app.route("/api/transactions", methods=["GET"])
 def api_transactions():
@@ -597,7 +713,147 @@ def api_transaction_detail(transaction_id):
         }), 404
 
     return jsonify(transaction)
+
+# ============================================================
+# CUSTOMER TRANSACTION HISTORY API
+# ============================================================
+
+@app.route("/api/customers/<customer_id>/transactions", methods=["GET"])
+def api_customer_transactions(customer_id):
+
+    try:
+        customer = get_customer(customer_id)
+
+        if customer is None:
+            return jsonify({
+                "error": "Customer not found."
+            }), 404
+
+        transactions = get_customer_transactions(customer_id)
+
+        return jsonify({
+            "customer_id": str(customer_id),
+            "count": len(transactions),
+            "transactions": transactions
+        })
+
+    except Exception as e:
+
+        print("Customer transaction history error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+# ============================================================
+# CUSTOMER PROFILE API
+# ============================================================
+
+@app.route("/api/customers/<customer_id>", methods=["GET"])
+def api_customer_profile(customer_id):
+
+    try:
+        customer = get_customer(customer_id)
+
+        if customer is None:
+            return jsonify({
+                "error": "Customer not found"
+            }), 404
+
+        devices = get_customer_devices(customer_id)
+
+        return jsonify({
+            "customer": customer,
+            "registered_devices": devices
+        })
+
+    except Exception as e:
+        print("Customer profile error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+# ============================================================
+# DEVICE ENROLLMENT API
+# ============================================================
+
+@app.route("/api/customers/<customer_id>/devices", methods=["POST"])
+def api_register_device(customer_id):
+
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                "error": "No device data received."
+            }), 400
+
+        customer = get_customer(customer_id)
+
+        if customer is None:
+            return jsonify({
+                "error": "Customer not found."
+            }), 404
+
+        device_identifier = data.get("device_identifier")
+        device_model = data.get("device_model")
+        device_type = data.get("device_type", "mobile")
+
+        if not device_identifier or not device_model:
+            return jsonify({
+                "error": "device_identifier and device_model are required."
+            }), 400
+
+        device_id = register_device(
+            customer_id=customer_id,
+            device_identifier=device_identifier,
+            device_model=device_model,
+            device_type=device_type
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Device enrolled successfully.",
+            "device_id": device_id,
+            "customer_id": str(customer_id),
+            "device_model": device_model,
+            "device_type": device_type
+        })
+
+    except Exception as e:
+
+        print("Device enrollment error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 400
+# API to update verification status (APPROVED / REJECTED)
+
+@app.route('/api/verifications/<int:verification_id>/status', methods=['POST'])
+def api_update_verification_status(verification_id):
+    data = request.json
+    new_status = data.get("status")
+    transaction_id = data.get("transaction_id")
+
+    if new_status not in ["APPROVED", "REJECTED"]:
+        return jsonify({"error": "Invalid status. Must be APPROVED or REJECTED"}), 400
+
+    if not transaction_id:
+        return jsonify({"error": "transaction_id is required"}), 400
+
+    # Update the status in the database
+    success = update_verification_status(verification_id, transaction_id, new_status)
     
+    if success:
+        return jsonify({
+            "message": "Verification and transaction status updated successfully",
+            "verification_id": verification_id,
+            "transaction_id": transaction_id,
+            "new_status": new_status
+        }), 200
+    else:
+        return jsonify({"error": "Failed to update database"}), 500
 
 
 # ============================================================

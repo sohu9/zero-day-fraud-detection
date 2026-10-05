@@ -1036,10 +1036,265 @@
     font-size: 12px;
     line-height: 1.5;
 }
+/* =========================================================
+   LOGIN SCREEN
+========================================================= */
+
+.login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(37, 99, 235, 0.12),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #f8fafc,
+            #eef4ff
+        );
+}
+
+.login-card {
+    width: 100%;
+    max-width: 430px;
+
+    padding: 38px;
+
+    background: rgba(255, 255, 255, 0.96);
+
+    border: 1px solid rgba(148, 163, 184, 0.25);
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 20px 60px rgba(15, 23, 42, 0.12);
+
+    backdrop-filter: blur(12px);
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-logo {
+    width: 62px;
+    height: 62px;
+
+    margin: 0 auto 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 16px;
+
+    background: #eff6ff;
+
+    font-size: 30px;
+}
+
+.login-brand h1 {
+    margin: 0;
+
+    font-size: 28px;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+.login-brand p {
+    margin-top: 8px;
+
+    font-size: 13px;
+
+    color: #64748b;
+}
+
+.login-field {
+    margin-bottom: 20px;
+}
+
+.login-field label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: #334155;
+}
+
+.login-field input {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 13px 14px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    font-size: 14px;
+
+    background: #ffffff;
+
+    color: #0f172a;
+
+    transition: 0.2s;
+}
+
+.login-field input:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.login-button {
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 6px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #2563eb;
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.login-button:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+}
+
+.login-message {
+    min-height: 20px;
+
+    margin-top: 14px;
+
+    text-align: center;
+
+    font-size: 13px;
+}
+
+.login-security {
+    margin-top: 24px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid #e2e8f0;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    color: #64748b;
+}
+
+
+/* Mobile */
+
+@media (max-width: 520px) {
+
+    .login-card {
+        padding: 28px 22px;
+    }
+
+    .login-brand h1 {
+        font-size: 24px;
+    }
+}
     </style>
 </head>
 
 <body>
+    <!-- =========================================================
+     LOGIN SCREEN
+========================================================= -->
+
+<div id="loginScreen" class="login-screen">
+
+    <div class="login-card">
+
+        <div class="login-brand">
+            <div class="login-logo">🛡️</div>
+
+            <h1>SecurePay AI</h1>
+
+            <p>Zero-Day Payment Fraud Detection</p>
+        </div>
+
+        <form id="loginForm">
+
+            <div class="login-field">
+                <label for="loginAccount">Account ID</label>
+
+                <input
+                    type="text"
+                    id="loginAccount"
+                    placeholder="Enter your account ID"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="login-field">
+                <label for="loginPassword">Password</label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button
+                type="submit"
+                class="login-button"
+            >
+                Login Securely
+            </button>
+
+        </form>
+
+        <div id="loginMessage" class="login-message"></div>
+
+        <div class="login-security">
+            🔒 Protected by AI-powered transaction security
+        </div>
+
+    </div>
+
+</div>
 
     <!-- =========================
          TOP BAR
@@ -2209,46 +2464,69 @@ ${getVerifyButton(data)}
             );
         }
 
+/* =====================================================
+   HOLD & VERIFY
+===================================================== */
 
-        /* =====================================================
-           HOLD & VERIFY
-        ===================================================== */
+async function verifyTransaction(encodedTransactionId) {
 
-        function verifyTransaction(
-            encodedTransactionId
-        ) {
+    const transactionId = decodeURIComponent(encodedTransactionId);
 
-            const transactionId =
-                decodeURIComponent(
-                    encodedTransactionId
-                );
+    showToast(
+        `Starting verification for transaction #${transactionId}...`
+    );
 
+    try {
 
+        // Create a PENDING verification request
+        const response = await fetch(
+            `/api/transactions/${transactionId}/verify`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
             showToast(
-                `Verification requested for transaction #${transactionId}`
+                `❌ ${data.error || "Unable to start verification."}`
             );
-
-
-            /*
-             * NEXT PHASE:
-             *
-             * Android BiometricPrompt
-             *
-             * The Android application will verify
-             * the user's registered fingerprint/face
-             * through the phone OS.
-             *
-             * Raw biometric data will NOT be sent
-             * to this Flask application.
-             */
-
-            console.log(
-                "Biometric verification requested:",
-                transactionId
-            );
+            return;
         }
 
+        console.log("Verification request:", data);
 
+        showToast(
+            `🔐 Verification pending for transaction #${transactionId}`
+        );
+
+        /*
+         * NEXT PHASE:
+         * Android BiometricPrompt
+         *
+         * Biometric success:
+         * PENDING → APPROVED
+         *
+         * Biometric failure/cancel:
+         * PENDING → REJECTED
+         */
+
+    } catch (error) {
+
+        console.error(
+            "Verification error:",
+            error
+        );
+
+        showToast(
+            "❌ Unable to connect to verification service."
+        );
+    }
+}
         /* =====================================================
            TOAST
         ===================================================== */

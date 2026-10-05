@@ -2,7 +2,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model # type: ignore
 from sklearn.metrics import (
     confusion_matrix,
     accuracy_score,
@@ -508,12 +508,9 @@ def evaluate_model():
         "genuine_median_error": float(
             np.median(genuine_errors)
         ),
-
         "fraud_median_error": float(
             np.median(fraud_errors)
-        ),
-        "genuine_errors": genuine_errors,
-        "fraud_errors": fraud_errors
+        )
     }
 
     joblib.dump(
