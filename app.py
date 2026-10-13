@@ -550,22 +550,35 @@ def handle_connect():
 # LOGIN
 # ============================================================
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return render_template("index.html")
+        return render_template("index.html", authenticated=False)
 
     account_id = request.form.get("account_id", "").strip()
     password = request.form.get("password", "")
+
+    if not account_id or not password:
+        return render_template(
+            "index.html",
+            authenticated=False,
+            login_error="Please enter your account ID and password."
+        ), 400
 
     user = get_auth_user(account_id)
 
     if user and check_password_hash(user["password_hash"], password):
         session["account_id"] = user["account_id"]
+        session.permanent = True
         return redirect(url_for("home"))
 
-    return "Invalid account ID or password", 401
-        
+    return render_template(
+        "index.html",
+        authenticated=False,
+        login_error="Invalid account ID or password."
+    ), 401
+
 
 
 # ============================================================
@@ -577,7 +590,7 @@ def home():
     if "account_id" not in session:
         return redirect(url_for("login"))
 
-    return render_template("index.html")
+    return render_template("index.html", authenticated=True)
 
 
 # ============================================================

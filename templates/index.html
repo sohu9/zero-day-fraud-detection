@@ -1238,7 +1238,7 @@
     <!-- =========================================================
      LOGIN SCREEN
 ========================================================= -->
-
+{% if not authenticated %}
 <div id="loginScreen" class="login-screen">
 
     <div class="login-card">
@@ -1251,7 +1251,7 @@
             <p>Zero-Day Payment Fraud Detection</p>
         </div>
 
-        <form id="loginForm" method="POST" action="/login">
+        <form id="loginForm" method="POST" action="{{ url_for('login') }}">
 
             <div class="login-field">
                 <label for="loginAccount">Account ID</label>
@@ -1288,7 +1288,13 @@
 
         </form>
 
-        <div id="loginMessage" class="login-message"></div>
+        <div
+            id="loginMessage"
+            class="login-message"
+            role="alert"
+            aria-live="polite"
+            {% if login_error %}style="color: #b91c1c;"{% endif %}
+        >{{ login_error | default('', true) }}</div>
 
         <div class="login-security">
             🔒 Protected by AI-powered transaction security
@@ -1297,7 +1303,9 @@
     </div>
 
 </div>
+{% endif %}
 
+{% if authenticated %}
     <!-- =========================
          TOP BAR
     ========================= -->
@@ -3044,6 +3052,7 @@ function closeInvestigation() {
     </div>
 
 </div>
+{% endif %}
 
 </body>
 </html>
