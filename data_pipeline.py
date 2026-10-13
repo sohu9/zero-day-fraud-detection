@@ -76,7 +76,13 @@ def build_preprocessor(df):
     else:
         X = df.copy()
 
-    # Convert timestamp
+    # Exclude post-auth risk score from model inputs
+    X = X.drop(
+        columns=["post_auth_risk_score"],
+        errors="ignore"
+    )
+
+    # Convert timestamp into time features
     X = add_time_features(X)
 
     # Find categorical features
@@ -108,6 +114,34 @@ def build_preprocessor(df):
                 )
             )
         ]
+    )
+
+    numerical_pipeline = Pipeline(
+        steps=[
+            ("scaler", StandardScaler())
+        ]
+    )
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            (
+                "numerical",
+                numerical_pipeline,
+                numerical_columns
+            ),
+            (
+                "categorical",
+                categorical_pipeline,
+                categorical_columns
+            )
+        ],
+        remainder="drop"
+    )
+
+    return (
+        preprocessor,
+        numerical_columns,
+        categorical_columns
     )
 
     numerical_pipeline = Pipeline(

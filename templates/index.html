@@ -906,331 +906,355 @@
                 width: 100%;
             }
         }
+
         /* INVESTIGATION MODAL */
-
-.modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.modal-overlay.show {
-    display: flex;
-}
-
-.investigation-modal {
-    width: 100%;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow-y: auto;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-}
-
-.modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #111827;
-}
-
-.modal-header p {
-    margin-top: 5px;
-    font-size: 12px;
-    color: #94a3b8;
-}
-
-.modal-close {
-    border: none;
-    background: #f1f5f9;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.investigation-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.investigation-item {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 9px;
-    padding: 12px;
-}
-
-.investigation-item span {
-    display: block;
-    font-size: 10px;
-    color: #94a3b8;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-}
-
-.investigation-item strong {
-    color: #334155;
-    font-size: 13px;
-}
-
-.investigation-section {
-    margin-top: 20px;
-}
-
-.investigation-section h4 {
-    color: #334155;
-    margin-bottom: 10px;
-}
-
-.reason-box {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 14px;
-}
-
-.reason-item {
-    background: white;
-    border: 1px solid #eef2f7;
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #475569;
-}
-
-.decision-box {
-    margin-top: 18px;
-    padding: 15px;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    border-radius: 10px;
-}
-
-.decision-box h4 {
-    color: #c2410c;
-    margin-bottom: 7px;
-}
-
-.decision-box p {
-    color: #7c2d12;
-    font-size: 12px;
-    line-height: 1.5;
-}
-/* =========================================================
-   LOGIN SCREEN
-========================================================= */
-
-.login-screen {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 24px;
-
-    background:
-        radial-gradient(
-            circle at top left,
-            rgba(37, 99, 235, 0.12),
-            transparent 35%
-        ),
-        linear-gradient(
-            135deg,
-            #f8fafc,
-            #eef4ff
-        );
-}
-
-.login-card {
-    width: 100%;
-    max-width: 430px;
-
-    padding: 38px;
-
-    background: rgba(255, 255, 255, 0.96);
-
-    border: 1px solid rgba(148, 163, 184, 0.25);
-
-    border-radius: 20px;
-
-    box-shadow:
-        0 20px 60px rgba(15, 23, 42, 0.12);
-
-    backdrop-filter: blur(12px);
-}
-
-.login-brand {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.login-logo {
-    width: 62px;
-    height: 62px;
-
-    margin: 0 auto 16px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 16px;
-
-    background: #eff6ff;
-
-    font-size: 30px;
-}
-
-.login-brand h1 {
-    margin: 0;
-
-    font-size: 28px;
-    font-weight: 700;
-
-    color: #0f172a;
-}
-
-.login-brand p {
-    margin-top: 8px;
-
-    font-size: 13px;
-
-    color: #64748b;
-}
-
-.login-field {
-    margin-bottom: 20px;
-}
-
-.login-field label {
-    display: block;
-
-    margin-bottom: 8px;
-
-    font-size: 13px;
-    font-weight: 600;
-
-    color: #334155;
-}
-
-.login-field input {
-    width: 100%;
-
-    box-sizing: border-box;
-
-    padding: 13px 14px;
-
-    border: 1px solid #cbd5e1;
-
-    border-radius: 10px;
-
-    outline: none;
-
-    font-size: 14px;
-
-    background: #ffffff;
-
-    color: #0f172a;
-
-    transition: 0.2s;
-}
-
-.login-field input:focus {
-    border-color: #2563eb;
-
-    box-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.10);
-}
-
-.login-button {
-    width: 100%;
-
-    padding: 14px;
-
-    margin-top: 6px;
-
-    border: none;
-
-    border-radius: 10px;
-
-    background: #2563eb;
-
-    color: white;
-
-    font-size: 14px;
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition: 0.2s;
-}
-
-.login-button:hover {
-    background: #1d4ed8;
-
-    transform: translateY(-1px);
-}
-
-.login-message {
-    min-height: 20px;
-
-    margin-top: 14px;
-
-    text-align: center;
-
-    font-size: 13px;
-}
-
-.login-security {
-    margin-top: 24px;
-
-    padding-top: 18px;
-
-    border-top: 1px solid #e2e8f0;
-
-    text-align: center;
-
-    font-size: 11px;
-
-    color: #64748b;
-}
-
-
-/* Mobile */
-
-@media (max-width: 520px) {
-
-    .login-card {
-        padding: 28px 22px;
-    }
-
-    .login-brand h1 {
-        font-size: 24px;
-    }
-}
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .investigation-modal {
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #111827;
+        }
+
+        .modal-header p {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .modal-close {
+            border: none;
+            background: #f1f5f9;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .investigation-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .investigation-item {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 9px;
+            padding: 12px;
+        }
+
+        .investigation-item span {
+            display: block;
+            font-size: 10px;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .investigation-item strong {
+            color: #334155;
+            font-size: 13px;
+        }
+
+        .investigation-section {
+            margin-top: 20px;
+        }
+
+        .investigation-section h4 {
+            color: #334155;
+            margin-bottom: 10px;
+        }
+
+        .reason-box {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .reason-item {
+            background: white;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .decision-box {
+            margin-top: 18px;
+            padding: 15px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+        }
+
+        .decision-box h4 {
+            color: #c2410c;
+            margin-bottom: 7px;
+        }
+
+        .decision-box p {
+            color: #7c2d12;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* =========================================================
+           LOGIN SCREEN
+        ========================================================= */
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(
+                    circle at top left,
+                    rgba(37, 99, 235, 0.12),
+                    transparent 35%
+                ),
+                linear-gradient(
+                    135deg,
+                    #f8fafc,
+                    #eef4ff
+                );
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 430px;
+            padding: 38px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(12px);
+        }
+
+        .login-brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 62px;
+            height: 62px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: #eff6ff;
+            font-size: 30px;
+        }
+
+        .login-brand h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .login-brand p {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .login-field {
+            margin-bottom: 20px;
+        }
+
+        .login-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .login-field input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+            background: #ffffff;
+            color: #0f172a;
+            transition: 0.2s;
+        }
+
+        .login-field input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 6px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .login-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .login-message {
+            min-height: 20px;
+            margin-top: 14px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .login-security {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        /* Mobile */
+        @media (max-width: 520px) {
+            .login-card {
+                padding: 28px 22px;
+            }
+            .login-brand h1 {
+                font-size: 24px;
+            }
+        }
+
+        /* MANUAL TRANSACTION TESTING */
+        .manual-test {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .manual-test h3 {
+            font-size: 19px;
+            margin-bottom: 6px;
+            color: #111827;
+        }
+
+        .manual-test .subtitle {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .manual-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .manual-grid label {
+            display: block;
+            font-size: 12px;
+            font-weight: 650;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        .manual-grid input,
+        .manual-grid select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        .manual-submit {
+            margin-top: 20px;
+            padding: 12px 18px;
+            background: #2563eb;
+            color: white;
+            border: 0;
+            border-radius: 9px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .manual-submit:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .manual-result {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 700px) {
+            .manual-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
     </style>
 </head>
 
@@ -1332,17 +1356,33 @@
 
         </div>
 
-        <div
-            id="connection-status"
-            class="connection"
-        >
+       <div style="display: flex; align-items: center; gap: 16px;">
+            
+            <div
+                id="connection-status"
+                class="connection"
+            >
+                <span class="connection-dot"></span>
+                <span id="connection-text">Connecting...</span>
+            </div>
 
-            <span class="connection-dot"></span>
-
-            <span id="connection-text">
-                Connecting...
-            </span>
-
+            <!-- LOGOUT BUTTON ADDED HERE -->
+            <form action="{{ url_for('logout') }}" method="POST" style="margin: 0;">
+                <button type="submit" style="
+                    background: transparent;
+                    border: 1px solid #ef4444;
+                    color: #ef4444;
+                    padding: 6px 14px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: 0.2s ease;
+                " onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+                    Logout
+                </button>
+            </form>
+            
         </div>
 
     </header>
@@ -1508,6 +1548,158 @@
 
             </div>
 
+        </section>
+
+        <!-- ==============================================
+             MANUAL TRANSACTION TESTING
+        =================================================== -->
+        <section class="manual-test">
+            <h3>🧪 Manual Transaction Testing</h3>
+            <p class="subtitle">
+                Enter transaction details and test the trained Autoencoder.
+                This is a project demo, not a real payment gateway.
+            </p>
+
+            <form id="manualTestForm">
+                <div class="manual-grid">
+
+                    <div>
+                        <label for="mt_id">Transaction ID</label>
+                        <input id="mt_id" type="number" value="900001" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_customer">Customer ID</label>
+                        <input id="mt_customer" type="number" value="10001" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_merchant">Merchant ID</label>
+                        <input id="mt_merchant" type="number" value="2001" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_time">Transaction Time</label>
+                        <input id="mt_time" type="datetime-local" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_amount">Transaction Amount (₹)</label>
+                        <input id="mt_amount" type="number" min="0.01"
+                               step="any" value="1500" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_age">Account Age (days)</label>
+                        <input id="mt_age" type="number" min="0"
+                               value="800" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_credit">Credit Score Band</label>
+                        <select id="mt_credit">
+                            <option value="low">low</option>
+                            <option value="medium" selected>medium</option>
+                            <option value="high">high</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="mt_kyc">KYC Level</label>
+                        <select id="mt_kyc">
+                            <option value="basic">basic</option>
+                            <option value="standard" selected>standard</option>
+                            <option value="enhanced">enhanced</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="mt_spend">Average Monthly Spend</label>
+                        <input id="mt_spend" type="number" min="0"
+                               step="any" value="12000" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_merchant_risk">Merchant Risk Score</label>
+                        <input id="mt_merchant_risk" type="number"
+                               min="0" max="1" step="any" value="0.2" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_international">International Transaction</label>
+                        <select id="mt_international">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="mt_iprisk">IP Risk Score (0–1)</label>
+                        <input id="mt_iprisk" type="number" min="0" max="1"
+                               step="any" value="0.2" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_1h">Transactions in Last Hour</label>
+                        <input id="mt_1h" type="number" min="0" value="1" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_24h">Transactions in Last 24 Hours</label>
+                        <input id="mt_24h" type="number" min="0" value="2" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_failed">Failed Transactions (24h)</label>
+                        <input id="mt_failed" type="number" min="0" value="0" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_geo">Distance from Last Transaction</label>
+                        <input id="mt_geo" type="number" min="0"
+                               step="any" value="10" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_deviation">Amount Deviation from User Mean</label>
+                        <input id="mt_deviation" type="number"
+                               step="any" value="200" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_postrisk">Post-Auth Risk Score (0–1)</label>
+                        <input id="mt_postrisk" type="number" min="0" max="1"
+                               step="any" value="0.2" required>
+                    </div>
+
+                    <div>
+                        <label for="mt_channel">Payment Channel</label>
+                        <select id="mt_channel">
+                            <option value="card" selected>card</option>
+                            <option value="online">online</option>
+                            <option value="mobile">mobile</option>
+                            <option value="bank_transfer">bank_transfer</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="mt_device">Device Type</label>
+                        <select id="mt_device">
+                            <option value="mobile" selected>mobile</option>
+                            <option value="desktop">desktop</option>
+                            <option value="tablet">tablet</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button class="manual-submit" id="manualSubmit" type="submit">
+                    Run AI Prediction
+                </button>
+
+                <div id="manualResult" class="manual-result" hidden
+                     role="status" aria-live="polite"></div>
+            </form>
         </section>
 
 
@@ -2474,69 +2666,93 @@ ${getVerifyButton(data)}
             );
         }
 
-/* =====================================================
-   HOLD & VERIFY
-===================================================== */
+        /* =====================================================
+           HOLD & VERIFY
+        ===================================================== */
 
-async function verifyTransaction(encodedTransactionId) {
+        async function verifyTransaction(encodedTransactionId) {
 
-    const transactionId = decodeURIComponent(encodedTransactionId);
+            const transactionId = decodeURIComponent(encodedTransactionId);
 
-    showToast(
-        `Starting verification for transaction #${transactionId}...`
-    );
-
-    try {
-
-        // Create a PENDING verification request
-        const response = await fetch(
-            `/api/transactions/${transactionId}/verify`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
             showToast(
-                `❌ ${data.error || "Unable to start verification."}`
+                `Starting verification for transaction #${transactionId}...`
             );
-            return;
-        }
 
-        console.log("Verification request:", data);
+            try {
 
-        showToast(
-            `🔐 Verification pending for transaction #${transactionId}`
-        );
+                // Create a PENDING verification request
+                const response = await fetch(
+                    `/api/transactions/${transactionId}/verify`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
 
-        /*
-         * NEXT PHASE:
-         * Android BiometricPrompt
-         *
-         * Biometric success:
-         * PENDING → APPROVED
-         *
-         * Biometric failure/cancel:
-         * PENDING → REJECTED
-         */
+                const response = await fetch("/predict", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    },
+    body: JSON.stringify(payload)
+});
 
-    } catch (error) {
+const contentType = response.headers.get("content-type") || "";
+const responseText = await response.text();
 
-        console.error(
-            "Verification error:",
-            error
-        );
+let data;
 
-        showToast(
-            "❌ Unable to connect to verification service."
-        );
+if (contentType.includes("application/json")) {
+    try {
+        data = JSON.parse(responseText);
+    } catch {
+        throw new Error("Server ne invalid JSON return kiya.");
     }
+} else {
+    console.error("Unexpected server response:", {
+        status: response.status,
+        contentType,
+        body: responseText.slice(0, 1000)
+    });
+
+    throw new Error(
+        `Server ne JSON ke badle HTML/text bheja (HTTP ${response.status}). ` +
+        "F12 → Console mein 'Unexpected server response' check karo."
+    );
 }
+
+if (!response.ok) {
+    throw new Error(data.error || `Request failed: HTTP ${response.status}`);
+}
+
+                if (!response.ok) {
+                    showToast(
+                        `❌ ${data.error || "Unable to start verification."}`
+                    );
+                    return;
+                }
+
+                console.log("Verification request:", data);
+
+                showToast(
+                    `🔐 Verification pending for transaction #${transactionId}`
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Verification error:",
+                    error
+                );
+
+                showToast(
+                    "❌ Unable to connect to verification service."
+                );
+            }
+        }
         /* =====================================================
            TOAST
         ===================================================== */
@@ -2769,290 +2985,393 @@ async function verifyTransaction(encodedTransactionId) {
             }
         );
         /* =========================
-   VIEW TRANSACTION DETAILS
-========================= */
+           VIEW TRANSACTION DETAILS
+        ========================= */
 
-async function viewInvestigation(id) {
+        async function viewInvestigation(id) {
 
-    id = decodeURIComponent(id);
+            id = decodeURIComponent(id);
 
-    const modal =
-        document.getElementById("investigation-modal");
+            const modal =
+                document.getElementById("investigation-modal");
 
-    const content =
-        document.getElementById("investigation-content");
+            const content =
+                document.getElementById("investigation-content");
 
-    modal.classList.add("show");
+            modal.classList.add("show");
 
-    content.innerHTML = `
-        <p style="text-align:center;">
-            Loading transaction details...
-        </p>
-    `;
+            content.innerHTML = `
+                <p style="text-align:center;">
+                    Loading transaction details...
+                </p>
+            `;
 
-    try {
+            try {
 
-        const response =
-            await fetch(
-                "/api/transactions/" +
-                encodeURIComponent(id)
-            );
+                const response =
+                    await fetch(
+                        "/api/transactions/" +
+                        encodeURIComponent(id)
+                    );
 
-        const data =
-            await response.json();
+                const data =
+                    await response.json();
 
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Transaction not found"
-            );
-        }
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "Transaction not found"
+                    );
+                }
 
-        const error =
-            Number(data.reconstruction_error);
+                const error =
+                    Number(data.reconstruction_error);
 
-        const threshold =
-            Number(data.threshold);
+                const threshold =
+                    Number(data.threshold);
 
-        const isAnomaly =
-            error > threshold;
+                const isAnomaly =
+                    error > threshold;
 
-        let reasons = [];
+                let reasons = [];
 
-        if (data.xai_explanation) {
+                if (data.xai_explanation) {
 
-            reasons =
-                String(data.xai_explanation)
-                .split("|")
-                .map(x => x.trim())
-                .filter(x => x);
+                    reasons =
+                        String(data.xai_explanation)
+                        .split("|")
+                        .map(x => x.trim())
+                        .filter(x => x);
 
-        }
+                }
 
-        if (reasons.length === 0) {
+                if (reasons.length === 0) {
 
-            reasons.push(
-                isAnomaly
-                ? "The transaction pattern is different from the legitimate patterns learned by the Autoencoder."
-                : "The transaction remains within the learned legitimate transaction pattern."
-            );
+                    reasons.push(
+                        isAnomaly
+                        ? "The transaction pattern is different from the legitimate patterns learned by the Autoencoder."
+                        : "The transaction remains within the learned legitimate transaction pattern."
+                    );
 
-        }
+                }
 
-        content.innerHTML = `
+                content.innerHTML = `
 
-            <div class="investigation-grid">
+                    <div class="investigation-grid">
 
-                <div class="investigation-item">
-                    <span>Transaction ID</span>
-                    <strong>${escapeHtml(data.transaction_id)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Transaction ID</span>
+                            <strong>${escapeHtml(data.transaction_id)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Customer ID</span>
-                    <strong>${escapeHtml(data.customer_id)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Customer ID</span>
+                            <strong>${escapeHtml(data.customer_id)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Merchant ID</span>
-                    <strong>${escapeHtml(data.merchant_id)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Merchant ID</span>
+                            <strong>${escapeHtml(data.merchant_id)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Amount</span>
-                    <strong>${formatAmount(data.transaction_amount)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Amount</span>
+                            <strong>${formatAmount(data.transaction_amount)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Risk Level</span>
-                    <strong>${escapeHtml(data.risk_level)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Risk Level</span>
+                            <strong>${escapeHtml(data.risk_level)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Status</span>
-                    <strong>${escapeHtml(data.transaction_status)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Status</span>
+                            <strong>${escapeHtml(data.transaction_status)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Reconstruction Error</span>
-                    <strong>${error.toFixed(4)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Reconstruction Error</span>
+                            <strong>${error.toFixed(4)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Threshold</span>
-                    <strong>${threshold.toFixed(4)}</strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Threshold</span>
+                            <strong>${threshold.toFixed(4)}</strong>
+                        </div>
 
-                <div class="investigation-item">
-                    <span>Decision</span>
-                    <strong>
-                        ${isAnomaly
-                            ? "Anomaly Detected"
-                            : "Normal"}
-                    </strong>
-                </div>
+                        <div class="investigation-item">
+                            <span>Decision</span>
+                            <strong>
+                                ${isAnomaly
+                                    ? "Anomaly Detected"
+                                    : "Normal"}
+                            </strong>
+                        </div>
 
-            </div>
-
-
-            <div class="investigation-section">
-
-                <h4>
-                    🧠 Why was this transaction flagged?
-                </h4>
-
-                <div class="reason-box">
-
-                    <p style="
-                        font-size:13px;
-                        color:#475569;
-                        line-height:1.5;
-                    ">
-
-                        ${
-                            isAnomaly
-
-                            ? "The transaction was placed on Hold & Verify because its overall pattern differs from the legitimate transaction patterns learned by the Autoencoder."
-
-                            : "The transaction is within the learned legitimate pattern."
-                        }
-
-                    </p>
+                    </div>
 
 
-                    ${reasons.map(reason => `
+                    <div class="investigation-section">
 
-                        <div class="reason-item">
+                        <h4>
+                            🧠 Why was this transaction flagged?
+                        </h4>
 
-                            🔴 ${escapeHtml(reason)}
+                        <div class="reason-box">
+
+                            <p style="
+                                font-size:13px;
+                                color:#475569;
+                                line-height:1.5;
+                            ">
+
+                                ${
+                                    isAnomaly
+
+                                    ? "The transaction was placed on Hold & Verify because its overall pattern differs from the legitimate transaction patterns learned by the Autoencoder."
+
+                                    : "The transaction is within the learned legitimate pattern."
+                                }
+
+                            </p>
+
+
+                            ${reasons.map(reason => `
+
+                                <div class="reason-item">
+
+                                    🔴 ${escapeHtml(reason)}
+
+                                </div>
+
+                            `).join("")}
 
                         </div>
 
-                    `).join("")}
-
-                </div>
-
-            </div>
+                    </div>
 
 
-            <div class="decision-box">
+                    <div class="decision-box">
 
-                <h4>
+                        <h4>
 
-                    ${
-                        isAnomaly
-                        ? "🔴 HOLD & VERIFY"
-                        : "🟢 APPROVED"
+                            ${
+                                isAnomaly
+                                ? "🔴 HOLD & VERIFY"
+                                : "🟢 APPROVED"
+                            }
+
+                        </h4>
+
+                        <p>
+
+                            Reconstruction error:
+
+                            <strong>
+                                ${error.toFixed(4)}
+                            </strong>
+
+                            <br>
+
+                            Detection threshold:
+
+                            <strong>
+                                ${threshold.toFixed(4)}
+                            </strong>
+
+                            <br><br>
+
+                            ${
+                                isAnomaly
+
+                                ? "Because the anomaly score crossed the calibrated threshold, the system requests additional verification instead of automatically declaring the transaction fraudulent."
+
+                                : "The transaction did not cross the anomaly threshold."
+                            }
+
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+            catch (error) {
+
+                content.innerHTML = `
+                    <p style="color:red;">
+                        ${escapeHtml(error.message)}
+                    </p>
+                `;
+
+            }
+        }
+
+
+        /* =========================
+           CLOSE POPUP
+        ========================= */
+
+        function closeInvestigation() {
+
+            document
+                .getElementById("investigation-modal")
+                .classList.remove("show");
+
+        }
+
+        /* =====================================================
+           MANUAL TRANSACTION PREDICTION
+        ===================================================== */
+        const manualForm = document.getElementById("manualTestForm");
+
+        if (manualForm) {
+            // Set a usable local date/time default.
+            const timeInput = document.getElementById("mt_time");
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            timeInput.value = now.toISOString().slice(0, 16);
+
+            manualForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const button = document.getElementById("manualSubmit");
+                const resultBox = document.getElementById("manualResult");
+
+                const number = id => Number(document.getElementById(id).value);
+                const value = id => document.getElementById(id).value;
+
+                const transactionTime = new Date(value("mt_time"));
+
+                if (Number.isNaN(transactionTime.getTime())) {
+                    alert("Please enter a valid transaction time.");
+                    return;
+                }
+
+                const payload = {
+                    transaction_id: number("mt_id"),
+                    customer_id: number("mt_customer"),
+                    merchant_id: number("mt_merchant"),
+                    transaction_time: transactionTime.toISOString().replace("T", " "),
+                    account_age_days: number("mt_age"),
+                    credit_score_band: value("mt_credit"),
+                    kyc_level: value("mt_kyc"),
+                    avg_monthly_spend: number("mt_spend"),
+                    merchant_risk_score: number("mt_merchant_risk"),
+                    transaction_amount: number("mt_amount"),
+                    is_international: number("mt_international"),
+                    ip_risk_score: number("mt_iprisk"),
+                    txn_count_1h: number("mt_1h"),
+                    txn_count_24h: number("mt_24h"),
+                    failed_txn_count_24h: number("mt_failed"),
+                    geo_distance_from_last_txn: number("mt_geo"),
+                    amount_deviation_from_user_mean: number("mt_deviation"),
+                    
+                    payment_channel: value("mt_channel"),
+                    device_type: value("mt_device")
+                };
+
+                if (Object.values(payload).some(
+                    v => typeof v === "number" && !Number.isFinite(v)
+                )) {
+                    resultBox.hidden = false;
+                    resultBox.textContent = "Please check all numeric fields.";
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "Analyzing...";
+                resultBox.hidden = false;
+                resultBox.textContent = "Sending transaction to the model...";
+
+                try {
+                    // NOTE: Changed to /predict_live to match typical Flask setup discussed earlier. 
+                    // Change back to "/predict" if your python app.py specifically uses @app.route('/predict')
+                    const response = await fetch("/predict", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || "Prediction request failed.");
                     }
 
-                </h4>
+                    resultBox.replaceChildren();
 
-                <p>
+                    const heading = document.createElement("h4");
+                    heading.textContent = "Prediction Result";
+                    resultBox.appendChild(heading);
 
-                    Reconstruction error:
+                    const fields = [
+                        ["Transaction ID", data.transaction_id],
+                        ["Status", data.transaction_status],
+                        ["Risk Level", data.risk_level],
+                        ["Reconstruction Error", data.reconstruction_error],
+                        ["Threshold", data.threshold],
+                        ["Explanation", data.xai_explanation]
+                    ];
 
-                    <strong>
-                        ${error.toFixed(4)}
-                    </strong>
+                    fields.forEach(([label, val]) => {
+                        const p = document.createElement("p");
+                        p.textContent = `${label}: ${val ?? "N/A"}`;
+                        resultBox.appendChild(p);
+                    });
 
-                    <br>
+                    showToast("Manual prediction completed.");
 
-                    Detection threshold:
+                    // Refresh dashboard records and counters after prediction.
+                    await refreshDashboardStats();
+                    await loadTransactions(currentFilter);
 
-                    <strong>
-                        ${threshold.toFixed(4)}
-                    </strong>
-
-                    <br><br>
-
-                    ${
-                        isAnomaly
-
-                        ? "Because the anomaly score crossed the calibrated threshold, the system requests additional verification instead of automatically declaring the transaction fraudulent."
-
-                        : "The transaction did not cross the anomaly threshold."
-                    }
-
-                </p>
-
-            </div>
-
-        `;
-
-    }
-
-    catch (error) {
-
-        content.innerHTML = `
-            <p style="color:red;">
-                ${escapeHtml(error.message)}
-            </p>
-        `;
-
-    }
-}
-
-
-/* =========================
-   CLOSE POPUP
-========================= */
-
-function closeInvestigation() {
-
-    document
-        .getElementById("investigation-modal")
-        .classList.remove("show");
-
-}
-
+                } catch (error) {
+                    resultBox.textContent = "Prediction error: " + error.message;
+                    console.error("Manual prediction error:", error);
+                } finally {
+                    button.disabled = false;
+                    button.textContent = "Run AI Prediction";
+                }
+            });
+        }
     </script>
+    
     <!-- INVESTIGATION POPUP -->
-
-<div
-    id="investigation-modal"
-    class="modal-overlay"
-    onclick="closeInvestigation()"
->
-
     <div
-        class="investigation-modal"
-        onclick="event.stopPropagation()"
+        id="investigation-modal"
+        class="modal-overlay"
+        onclick="closeInvestigation()"
     >
-
-        <div class="modal-header">
-
-            <div>
-
-                <h3>
-                    🔍 Transaction Investigation
-                </h3>
-
-                <p>
-                    Detailed AI analysis
-                </p>
-
-            </div>
-
-            <button
-                class="modal-close"
-                onclick="closeInvestigation()"
-            >
-                ×
-            </button>
-
-        </div>
-
-
         <div
-            id="investigation-content"
-            class="modal-body"
+            class="investigation-modal"
+            onclick="event.stopPropagation()"
         >
-
+            <div class="modal-header">
+                <div>
+                    <h3>
+                        🔍 Transaction Investigation
+                    </h3>
+                    <p>
+                        Detailed AI analysis
+                    </p>
+                </div>
+                <button
+                    class="modal-close"
+                    onclick="closeInvestigation()"
+                >
+                    ×
+                </button>
+            </div>
+            <div
+                id="investigation-content"
+                class="modal-body"
+            >
+            </div>
         </div>
-
     </div>
-
-</div>
 {% endif %}
 
 </body>
 </html>
+```eof

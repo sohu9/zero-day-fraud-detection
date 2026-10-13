@@ -1,25 +1,82 @@
+
 import json
-import urllib.request
+import sys
+from pathlib import Path
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
-# Hamari API ka URL
-url = 'http://127.0.0.1:5000/predict'
+import pandas as pd
 
-# 19 features ka dummy data (kuch values badi rakhi hain taaki Fraud detect ho aur XAI chale)
-data = {
-    "features": [0.9, 0.8, 75000.0, 2.5, 0.1, 0.8, 0.1, 0.1, 0.9, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-}
+API_URL = "http://127.0.0.1:5000/predict"
+CSV_PATH = Path("data/transactions_test.csv")
 
-# Data ko JSON format me API ko bhejna
-req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
 
-print("Sending data to API...\n")
-try:
-    response = urllib.request.urlopen(req)
-    result = json.loads(response.read().decode('utf-8'))
-    
-    # Output ko sundar tarike se print karna
-    print("--- AUN'S API OUTPUT ---")
-    print(json.dumps(result, indent=4))
-    
-except Exception as e:
-    print("Error aaya:", e)
+def main():
+    if not CSV_PATH.exists():
+        print(f"ERROR: Dataset not found: {CSV_PATH.resolve()}")
+        sys.exit(1)
+
+    df = pd.read_csv(CSV_PATH)
+
+    if df.empty:
+        print("ERROR: Test dataset is empty.")
+        sys.exit(1)
+
+    print("Dataset shape:", df.shape)
+    print("Dataset columns:", list(df.columns))
+
+    # Use one actual transaction from the test dataset.
+    actual_label = None
+    if "is_fraud" in df.columns:
+        actual_label = int(df.iloc[0]["is_fraud"])
+
+    data = df.iloc[0].to_dict()
+
+    # Ground-truth label is for evaluation only, never prediction input.
+    data.pop("is_fraud", None)
+
+    # Convert pandas missing values and NumPy values to JSON-safe values.
+    clean_data = {}
+    for key, value in data.items():
+        if pd.isna(value):
+            clean_data[key] = None
+        elif hasattr(value, "item"):
+            clean_data[key] = value.item()
+        else:
+            clean_data[key] = value
+
+    payload = json.dumps(clean_data).encode("utf-8")
+
+    req = Request(
+        API_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    print("\nSending REAL dataset row to API...")
+    print("Input feature columns:", len(clean_data))
+    print("Actual dataset label (evaluation only):", actual_label)
+
+    try:
+        with urlopen(req, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+            print("\n========== PREDICTION RESULT ==========")
+            print(json.dumps(result, indent=4, ensure_ascii=False))
+            print("=======================================")
+
+    except HTTPError as error:
+        print(f"\nAPI returned HTTP {error.code}")
+        print(error.read().decode("utf-8", errors="replace"))
+        sys.exit(1)
+
+    except URLError as error:
+        print("\nCannot connect to Flask.")
+        print("Check that app.py is running on port 5000.")
+        print(error.reason)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

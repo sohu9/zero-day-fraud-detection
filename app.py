@@ -1,10 +1,33 @@
-import os
-from datetime import datetime
+"""Zero-Day Online Payment Fraud Detection demo API.
 
+This file preserves the artifact format used by the supplied app.py:
+  - zero_day_autoencoder.keras
+  - preprocessor.joblib
+  - threshold.joblib
+
+Keep these artifacts from the SAME training pipeline. If your latest Colab
+model is the 23-feature model saved as zero_day_autoencoder_best.keras with
+AE imputer/scaler pickle files, those are not interchangeable; export the
+matching preprocessing artifact first or adapt the inference pipeline.
+"""
+
+import os
+import logging
+from functools import wraps
+from datetime import datetime
+from flask import request, jsonify
 import joblib
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from scipy import sparse
+from flask import (
+    Flask, request, jsonify, render_template, session, redirect, url_for
+)
+from werkzeug.security import check_password_hash
+from flask_socketio import SocketIO
+from flask_cors import CORS
+
 from database import (
     init_database,
     save_transaction,
@@ -18,61 +41,253 @@ from database import (
     save_verification_event,
     get_verification_events,
     update_verification_status,
-    create_auth_user,
     get_auth_user,
 )
-from flask import Flask, request, jsonify, render_template , session, redirect, url_for
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO
-from flask_cors import CORS
-
 from data_pipeline import add_time_features, ID_COLUMNS, TARGET_COLUMN
 
 
+# ============================================================
+# APP CONFIGURATION
+# ============================================================
+
 app = Flask(__name__)
 init_database()
-CORS(app)
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 
+# For local development this is convenient. Before deployment, restrict
+# origins to your own frontend domain rather than using '*'.
+CORS(app)
+
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
 if not app.config["SECRET_KEY"]:
     raise RuntimeError(
-        "FLASK_SECRET_KEY environment variable set karo."
+        "FLASK_SECRET_KEY environment variable set karo. Example (PowerShell): "
+        '$env:FLASK_SECRET_KEY="replace-with-a-long-random-secret"'
     )
 
-# WebSockets initialize
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-LOG_FILE = "logs/transactions.log"
+LOG_FILE = os.environ.get("TRANSACTION_LOG_FILE", "logs/transactions.log")
+os.makedirs(os.path.dirname(LOG_FILE) or ".", exist_ok=True)
 os.makedirs("logs", exist_ok=True)
 
-MODEL_FILE = "zero_day_autoencoder.keras"
-PREPROCESSOR_FILE = "preprocessor.joblib"
-THRESHOLD_FILE = "threshold.joblib"
-TEST_FILE = "data/transactions_test.csv"
+# Paths can be overridden with environment variables. Default paths are
+# relative to the directory from which you launch app.py.
+MODEL_FILE = os.environ.get("AE_MODEL_FILE", "zero_day_autoencoder.keras")
+PREPROCESSOR_FILE = os.environ.get("AE_PREPROCESSOR_FILE", "preprocessor.joblib")
+THRESHOLD_FILE = os.environ.get("AE_THRESHOLD_FILE", "threshold.joblib")
+TEST_FILE = os.environ.get("TRANSACTIONS_TEST_FILE", "data/transactions_test.csv")
 
 
 # ============================================================
-# LOAD TRAINED MODEL + TRAINING PREPROCESSOR + THRESHOLD
+# API SESSION AUTHENTICATION
 # ============================================================
 
-print("Loading Model...")
-model = tf.keras.models.load_model(MODEL_FILE)
-print("✅ Model loaded.")
+@app.before_request
+def protect_api_routes():
+    # Health check stays public for monitoring.
+    if request.path == "/api/health":
+        return None
 
-print("Loading training preprocessing artifact...")
+    # Require a valid login session for all other API routes.
+    if request.path.startswith("/api/"):
+        if not session.get("account_id"):
+            return jsonify({
+                "error": "Authentication required. Please log in."
+            }), 401
+
+    return None
+# ============================================================
+# LOAD MODEL + TRAINING PREPROCESSOR + THRESHOLD
+# ============================================================
+
+print("Loading Autoencoder model...")
+if not os.path.isfile(MODEL_FILE):
+    raise FileNotFoundError(f"Autoencoder model file not found: {MODEL_FILE}")
+model = tf.keras.models.load_model(MODEL_FILE, compile=False)
+print("Model loaded.")
+
+print("Loading saved training preprocessing artifact...")
+if not os.path.isfile(PREPROCESSOR_FILE):
+    raise FileNotFoundError(
+        f"Preprocessor artifact not found: {PREPROCESSOR_FILE}"
+    )
 preprocessor_artifact = joblib.load(PREPROCESSOR_FILE)
 
+for key in ("preprocessor", "numerical_columns", "categorical_columns"):
+    if key not in preprocessor_artifact:
+        raise KeyError(
+            f"{PREPROCESSOR_FILE} is missing required key '{key}'. "
+            "Use the artifact created by the same training pipeline."
+        )
+
 preprocessor = preprocessor_artifact["preprocessor"]
-feature_names = preprocessor_artifact["feature_names"]
+expected_columns = (
+    list(preprocessor_artifact["numerical_columns"])
+    + list(preprocessor_artifact["categorical_columns"])
+)
 
-print("✅ Preprocessor loaded.")
-print(f"Number of features: {len(feature_names)}")
+# Prevent a known severe target-leakage feature from entering live inference.
+# If training included it, retrain the model without it instead of silently
+# feeding a made-up/missing value at inference time.
+forbidden_features = {"post_auth_risk_score"}
+leaked = forbidden_features.intersection(expected_columns)
+if leaked:
+    raise RuntimeError(
+        "Unsafe training feature(s) found in the preprocessing artifact: "
+        + ", ".join(sorted(leaked))
+        + ". Retrain without these target-leakage feature(s), then export a "
+        "matching model and preprocessor."
+    )
 
-print("Loading calibrated threshold...")
+print("Preprocessor loaded.")
+print(f"Input columns before preprocessing: {len(expected_columns)}")
+
+# Prefer the transformed names returned by the fitted transformer when they
+# match the model's expected output dimension (e.g., after one-hot encoding).
+raw_feature_names = preprocessor_artifact.get("feature_names", [])
+try:
+    transformed_names = list(preprocessor.get_feature_names_out())
+except Exception:
+    transformed_names = []
+
+model_input_dim = model.input_shape[-1]
+if model_input_dim is None:
+    raise RuntimeError("Model has an undefined input dimension.")
+model_input_dim = int(model_input_dim)
+
+if len(transformed_names) == model_input_dim:
+    feature_names = transformed_names
+elif len(raw_feature_names) == model_input_dim:
+    feature_names = list(raw_feature_names)
+else:
+    raise RuntimeError(
+        "Feature-name/model dimension mismatch. Model expects "
+        f"{model_input_dim} features; transformer returns "
+        f"{len(transformed_names)} transformed names and artifact contains "
+        f"{len(raw_feature_names)} feature names. Export the feature names "
+        "that correspond exactly to the trained model input."
+    )
+
+print(f"Model input features: {model_input_dim}")
+
+print("Loading anomaly threshold...")
+if not os.path.isfile(THRESHOLD_FILE):
+    raise FileNotFoundError(f"Threshold file not found: {THRESHOLD_FILE}")
 threshold_data = joblib.load(THRESHOLD_FILE)
-THRESHOLD = float(threshold_data["threshold"])
+if isinstance(threshold_data, dict):
+    if "threshold" not in threshold_data:
+        raise KeyError("Threshold artifact must contain a 'threshold' key.")
+    THRESHOLD = float(threshold_data["threshold"])
+else:
+    # Backwards-compatible support for a file that stores a number directly.
+    THRESHOLD = float(threshold_data)
 
-print(f"✅ Threshold loaded: {THRESHOLD:.6f}")
+if not np.isfinite(THRESHOLD):
+    raise ValueError("Configured anomaly threshold must be finite.")
+
+print(f"Threshold loaded: {THRESHOLD:.6f}")
+
+
+# ============================================================
+# VALIDATION + PREPROCESSING
+# ============================================================
+
+def _build_model_frame(data):
+    """Build the one-row raw feature frame exactly as training did."""
+    frame = pd.DataFrame([data])
+
+    if TARGET_COLUMN in frame.columns:
+        frame = frame.drop(columns=[TARGET_COLUMN])
+
+    # IDs are kept in the transaction record but must not be model inputs.
+    frame = frame.drop(
+        columns=[column for column in ID_COLUMNS if column in frame.columns],
+        errors="ignore",
+    )
+
+    # Must be the same feature engineering used during training.
+    frame = add_time_features(frame)
+
+    missing = [column for column in expected_columns if column not in frame.columns]
+    if missing:
+        raise ValueError(
+            "Missing required transaction fields after time-feature engineering: "
+            + ", ".join(missing)
+        )
+
+    return frame[expected_columns].copy()
+
+
+def validate_transaction_input(data):
+    """Validate a JSON transaction before running the trained model.
+
+    - Accept a JSON object only.
+    - Strip the target label so it can never be used for inference.
+    - Keep IDs for records, but exclude them from model features.
+    - Check required columns after add_time_features(), so generated time
+      columns are not incorrectly demanded from the frontend.
+    - Reject invalid numeric values and missing required values.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("Request body must be a JSON object.")
+
+    clean_data = dict(data)
+    clean_data.pop(TARGET_COLUMN, None)
+    clean_data.pop("post_auth_risk_score", None)
+
+    # Reject nulls/NaN and invalid values in the final raw feature frame.
+    feature_frame = _build_model_frame(clean_data)
+
+    numeric_columns = list(preprocessor_artifact["numerical_columns"])
+    categorical_columns = list(preprocessor_artifact["categorical_columns"])
+
+    for column in expected_columns:
+        value = feature_frame.iloc[0][column]
+        if pd.isna(value):
+            raise ValueError(f"Required field '{column}' is missing or null.")
+
+        if column in numeric_columns:
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError):
+                raise ValueError(f"Field '{column}' must be numeric.")
+            if not np.isfinite(numeric_value):
+                raise ValueError(f"Field '{column}' must be a finite number.")
+            feature_frame.at[feature_frame.index[0], column] = numeric_value
+        elif column in categorical_columns:
+            if not isinstance(value, (str, int, float, bool, np.generic)):
+                raise ValueError(f"Field '{column}' must be a valid category.")
+            if isinstance(value, str) and not value.strip():
+                raise ValueError(f"Field '{column}' cannot be an empty string.")
+
+    return clean_data
+
+
+def preprocess_data(data):
+    """Apply the saved training preprocessor to one transaction."""
+    # Revalidate here too, so callers cannot accidentally bypass validation.
+    clean_data = validate_transaction_input(data)
+    raw_features = _build_model_frame(clean_data)
+
+    processed = preprocessor.transform(raw_features)
+    if sparse.issparse(processed):
+        processed = processed.toarray()
+
+    processed = np.asarray(processed, dtype=np.float32)
+    if processed.ndim != 2 or processed.shape[0] != 1:
+        raise ValueError("Preprocessor must return exactly one feature row.")
+    if processed.shape[1] != model_input_dim:
+        raise ValueError(
+            f"Model expects {model_input_dim} processed features, but "
+            f"preprocessing produced {processed.shape[1]}."
+        )
+    if not np.isfinite(processed).all():
+        raise ValueError("Preprocessed features contain NaN or infinity.")
+
+    return processed
 
 
 # ============================================================
@@ -80,313 +295,84 @@ print(f"✅ Threshold loaded: {THRESHOLD:.6f}")
 # ============================================================
 
 def log_transaction(data, status, risk, mse):
+    """Append a concise transaction decision to the local log."""
     with open(LOG_FILE, "a", encoding="utf-8") as file:
         file.write(
-            f"{datetime.now()} | "
+            f"{datetime.now().isoformat(timespec='seconds')} | "
             f"Transaction ID: {data.get('transaction_id')} | "
             f"Customer ID: {data.get('customer_id')} | "
             f"Merchant ID: {data.get('merchant_id')} | "
             f"Amount: {data.get('transaction_amount')} | "
-            f"Status: {status} | "
-            f"Risk: {risk} | "
+            f"Status: {status} | Risk: {risk} | "
             f"Reconstruction Error: {mse:.6f}\n"
         )
 
 
 # ============================================================
-# PREPROCESS TRANSACTION USING TRAINING PREPROCESSOR
+# HUMAN-READABLE RECONSTRUCTION-ERROR EXPLANATION
 # ============================================================
 
-def preprocess_data(data):
-    """
-    Apply exactly the same preprocessing used during training.
-    IDs are preserved in the transaction record but excluded
-    from ML features.
-    """
+def _normalise_feature_name(name):
+    """Remove ColumnTransformer prefixes, if present."""
+    name = str(name)
+    if "__" in name:
+        name = name.split("__", 1)[1]
+    return name
 
-    df = pd.DataFrame([data])
-
-    # Remove target if accidentally sent
-    if TARGET_COLUMN in df.columns:
-        df = df.drop(columns=[TARGET_COLUMN])
-
-    # Remove IDs from ML input
-    df = df.drop(
-        columns=[col for col in ID_COLUMNS if col in df.columns],
-        errors="ignore"
-    )
-
-    # Convert transaction_time into the same time features
-    df = add_time_features(df)
-
-    # Ensure same feature columns as training
-    expected_columns = (
-        preprocessor_artifact["numerical_columns"]
-        + preprocessor_artifact["categorical_columns"]
-    )
-
-    missing_columns = [
-        col for col in expected_columns
-        if col not in df.columns
-    ]
-
-    if missing_columns:
-        raise ValueError(
-            f"Missing required transaction fields: {missing_columns}"
-        )
-
-    df = df[expected_columns]
-
-    # Apply SAVED training preprocessor
-    processed = preprocessor.transform(df)
-
-    return np.asarray(processed, dtype=np.float32)
-
-
-# ============================================================
-# HUMAN-READABLE XAI
-# ============================================================
 
 def generate_xai_explanation(data, features, reconstruction):
+    """Describe the three largest per-feature reconstruction residuals.
+
+    This is a residual-based explanation, not SHAP and not causal proof.
     """
-    Generate explanations from the actual dataset features.
-    No fake Feature_1 / Feature_2 mapping.
-    """
-
-    feature_errors = np.abs(features - reconstruction)[0]
-
-    top_indices = np.argsort(feature_errors)[-3:][::-1]
-
+    residuals = np.abs(np.asarray(features) - np.asarray(reconstruction))[0]
+    top_indices = np.argsort(residuals)[-3:][::-1]
     explanations = []
 
     for index in top_indices:
+        feature = _normalise_feature_name(feature_names[index])
+        error = float(residuals[index])
 
-        feature = feature_names[index]
-        error = float(feature_errors[index])
-
-        # ----------------------------------------------------
-        # Transaction Amount
-        # ----------------------------------------------------
-        if feature == "transaction_amount":
+        if feature in {"transaction_amount", "amount_log"}:
             amount = data.get("transaction_amount")
-
             if amount is not None:
-                explanations.append(
-                    f"Transaction amount ₹{float(amount):,.2f} "
-                    f"shows an unusual pattern"
-                )
+                explanation = f"Transaction amount (₹{float(amount):,.2f}) differs from the learned pattern"
             else:
-                explanations.append(
-                    "Transaction amount shows an unusual pattern"
-                )
-
-        # ----------------------------------------------------
-        # Amount deviation
-        # ----------------------------------------------------
-        elif feature == "amount_deviation_from_user_mean":
-            value = data.get("amount_deviation_from_user_mean")
-
-            if value is not None:
-                explanations.append(
-                    f"Transaction amount deviation from the user's "
-                    f"normal spending pattern is high ({float(value):.2f})"
-                )
-            else:
-                explanations.append(
-                    "Transaction amount deviation from normal spending "
-                    "pattern is unusually high"
-                )
-
-        # ----------------------------------------------------
-        # Transaction frequency
-        # ----------------------------------------------------
-        elif feature == "txn_count_1h":
-            value = data.get("txn_count_1h")
-
-            if value is not None:
-                explanations.append(
-                    f"High transaction activity detected in the last hour "
-                    f"({int(float(value))} transactions)"
-                )
-            else:
-                explanations.append(
-                    "Unusual transaction activity detected within one hour"
-                )
-
-        elif feature == "txn_count_24h":
-            value = data.get("txn_count_24h")
-
-            if value is not None:
-                explanations.append(
-                    f"Unusual transaction activity in the last 24 hours "
-                    f"({int(float(value))} transactions)"
-                )
-            else:
-                explanations.append(
-                    "Unusual transaction activity detected within 24 hours"
-                )
-
-        # ----------------------------------------------------
-        # Failed transactions
-        # ----------------------------------------------------
-        elif feature == "failed_txn_count_24h":
-            value = data.get("failed_txn_count_24h")
-
-            if value is not None:
-                explanations.append(
-                    f"Elevated failed transaction count in the last 24 hours "
-                    f"({int(float(value))} failures)"
-                )
-            else:
-                explanations.append(
-                    "Elevated failed transaction activity detected"
-                )
-
-        # ----------------------------------------------------
-        # Device
-        # ----------------------------------------------------
-        elif feature == "device_type":
-            device = data.get("device_type", "unknown")
-
-            explanations.append(
-                f"Device type '{device}' contributes strongly to the anomaly score"
-            )
-
-        # ----------------------------------------------------
-        # Payment channel
-        # ----------------------------------------------------
-        elif feature == "payment_channel":
-            channel = data.get("payment_channel", "unknown")
-
-            explanations.append(
-                f"Payment channel '{channel}' contributes strongly to the anomaly score"
-            )
-
-        # ----------------------------------------------------
-        # IP risk
-        # ----------------------------------------------------
+                explanation = "Transaction amount feature differs from the learned pattern"
+        elif feature in {
+            "amount_deviation_from_user_mean", "amount_deviation_causal",
+            "trusted_amount_deviation", "trusted_deviation_signed_log"
+        }:
+            explanation = "Spending amount deviation differs from the learned pattern"
+        elif feature in {"txn_count_1h", "transactions_last_1h"}:
+            explanation = "Recent transaction frequency differs from the learned pattern"
+        elif feature in {"txn_count_24h", "transactions_last_24h"}:
+            explanation = "24-hour transaction frequency differs from the learned pattern"
+        elif feature in {"failed_txn_count_24h"}:
+            explanation = "Recent failed-transaction activity differs from the learned pattern"
+        elif feature.startswith("device_type") or feature == "device_type":
+            explanation = f"Device-type feature '{data.get('device_type', 'unknown')}' differs from the learned pattern"
+        elif feature.startswith("payment_channel") or feature == "payment_channel":
+            explanation = f"Payment-channel feature '{data.get('payment_channel', 'unknown')}' differs from the learned pattern"
         elif feature == "ip_risk_score":
-            value = data.get("ip_risk_score")
-
-            if value is not None:
-                explanations.append(
-                    f"Elevated IP risk score detected ({float(value):.2f})"
-                )
-            else:
-                explanations.append(
-                    "IP-related risk contributes strongly to the anomaly score"
-                )
-
-        # ----------------------------------------------------
-        # Merchant risk
-        # ----------------------------------------------------
+            explanation = "IP-related risk feature differs from the learned pattern"
         elif feature == "merchant_risk_score":
-            value = data.get("merchant_risk_score")
-
-            if value is not None:
-                explanations.append(
-                    f"Merchant risk score is elevated ({float(value):.2f})"
-                )
-            else:
-                explanations.append(
-                    "Merchant risk contributes strongly to the anomaly score"
-                )
-
-        # ----------------------------------------------------
-        # Geographic distance
-        # ----------------------------------------------------
-        elif feature == "geo_distance_from_last_txn":
-            value = data.get("geo_distance_from_last_txn")
-
-            if value is not None:
-                explanations.append(
-                    f"Large geographic distance from the previous transaction "
-                    f"({float(value):.2f})"
-                )
-            else:
-                explanations.append(
-                    "Geographic transaction pattern is unusual"
-                )
-
-        # ----------------------------------------------------
-        # International transaction
-        # ----------------------------------------------------
+            explanation = "Merchant risk feature differs from the learned pattern"
+        elif feature in {"geo_distance_from_last_txn", "geo_distance_log"}:
+            explanation = "Geographic-distance feature differs from the learned pattern"
         elif feature == "is_international":
-            value = data.get("is_international")
-
-            if value is not None and int(float(value)) == 1:
-                explanations.append(
-                    "International transaction contributes to the anomaly score"
-                )
-            else:
-                explanations.append(
-                    "International transaction behavior contributes to the anomaly score"
-                )
-
-        # ----------------------------------------------------
-        # Post-auth risk
-        # ----------------------------------------------------
-        elif feature == "post_auth_risk_score":
-            value = data.get("post_auth_risk_score")
-
-            if value is not None:
-                explanations.append(
-                    f"Post-authentication risk score is elevated "
-                    f"({float(value):.2f})"
-                )
-            else:
-                explanations.append(
-                    "Post-authentication risk contributes strongly to the anomaly score"
-                )
-
-        # ----------------------------------------------------
-        # Account age
-        # ----------------------------------------------------
-        elif feature == "account_age_days":
-            explanations.append(
-                "Account age contributes strongly to the detected anomaly"
-            )
-
-        # ----------------------------------------------------
-        # Credit / KYC
-        # ----------------------------------------------------
-        elif feature == "credit_score_band":
-            explanations.append(
-                "Credit-score band contributes strongly to the detected anomaly"
-            )
-
-        elif feature == "kyc_level":
-            explanations.append(
-                "KYC level contributes strongly to the detected anomaly"
-            )
-
-        # ----------------------------------------------------
-        # Time features
-        # ----------------------------------------------------
-        elif feature == "transaction_hour":
-            explanations.append(
-                "Transaction timing contributes strongly to the anomaly score"
-            )
-
-        elif feature == "transaction_day_of_week":
-            explanations.append(
-                "Transaction day pattern contributes strongly to the anomaly score"
-            )
-
-        elif feature == "is_weekend":
-            explanations.append(
-                "Weekend transaction pattern contributes strongly to the anomaly score"
-            )
-
-        # ----------------------------------------------------
-        # Fallback
-        # ----------------------------------------------------
+            explanation = "International-transaction feature differs from the learned pattern"
+        elif feature in {"transaction_hour", "hour_sin", "hour_cos"}:
+            explanation = "Transaction-time feature differs from the learned pattern"
+        elif feature in {"transaction_day_of_week", "day_of_week", "dow_sin", "dow_cos", "is_weekend"}:
+            explanation = "Day-of-week feature differs from the learned pattern"
         else:
-            explanations.append(
-                f"Feature '{feature}' contributes strongly to the anomaly score"
-            )
+            explanation = f"Feature '{feature}' differs from the learned normal pattern"
 
-    return " | ".join(explanations)
+        # Residual magnitude is shown as context, not a probability or causal effect.
+        explanations.append(f"{explanation} (residual={error:.3f})")
+
+    return " | ".join(explanations) if explanations else "No feature-level explanation available."
 
 
 # ============================================================
@@ -394,162 +380,118 @@ def generate_xai_explanation(data, features, reconstruction):
 # ============================================================
 
 def analyze_transaction(data):
+    clean_data = validate_transaction_input(data)
+    features = preprocess_data(clean_data)
+    reconstruction = model.predict(features, verbose=0)
 
-    features = preprocess_data(data)
+    if reconstruction.shape != features.shape:
+        raise ValueError(
+            f"Reconstruction shape {reconstruction.shape} does not match "
+            f"input shape {features.shape}."
+        )
 
-    reconstruction = model.predict(
-        features,
-        verbose=0
-    )
-
-    mse = float(
-        np.mean(
-            np.square(features - reconstruction),
-            axis=1
-        )[0]
-    )
+    mse = float(np.mean(np.square(features - reconstruction), axis=1)[0])
+    if not np.isfinite(mse):
+        raise ValueError("Model returned a non-finite reconstruction error.")
 
     if mse > THRESHOLD:
-
         status = "Hold & Verify 🚨"
         risk = "High"
-
-        xai_explanation = generate_xai_explanation(
-            data,
-            features,
-            reconstruction
+        explanation = generate_xai_explanation(
+            clean_data, features, reconstruction
         )
-
     else:
-
         status = "Approved ✅"
         risk = "Low"
-
-        xai_explanation = (
-            "Transaction reconstruction error is below "
-            "the anomaly threshold."
+        explanation = (
+            "Reconstruction error is below the configured anomaly threshold. "
+            "This is not a guarantee that the transaction is legitimate."
         )
 
-    return {
-    "transaction_id": data.get("transaction_id"),
-    "customer_id": data.get("customer_id"),
-    "merchant_id": data.get("merchant_id"),
-    "transaction_amount": data.get("transaction_amount"),
-
-    "transaction_status": status,
-    "risk_level": risk,
-    "reconstruction_error": mse,
-    "threshold": THRESHOLD,
-    "xai_explanation": xai_explanation,
-
-    # Transaction context
-    "transaction_time": data.get("transaction_time"),
-    "payment_channel": data.get("payment_channel"),
-    "device_type": data.get("device_type"),
-    "is_international": data.get("is_international"),
-    "ip_risk_score": data.get("ip_risk_score"),
-    "txn_count_1h": data.get("txn_count_1h"),
-    "txn_count_24h": data.get("txn_count_24h"),
-    "failed_txn_count_24h": data.get("failed_txn_count_24h"),
-    "geo_distance_from_last_txn": data.get("geo_distance_from_last_txn"),
-    "amount_deviation_from_user_mean": data.get("amount_deviation_from_user_mean"),
-    "post_auth_risk_score": data.get("post_auth_risk_score")
-}
+    # Do not return target labels or the known leakage field to clients.
+    result = {
+        "transaction_id": clean_data.get("transaction_id"),
+        "customer_id": clean_data.get("customer_id"),
+        "merchant_id": clean_data.get("merchant_id"),
+        "transaction_amount": clean_data.get("transaction_amount"),
+        "transaction_status": status,
+        "risk_level": risk,
+        "reconstruction_error": mse,
+        "threshold": THRESHOLD,
+        "xai_explanation": explanation,
+        "transaction_time": clean_data.get("transaction_time"),
+        "payment_channel": clean_data.get("payment_channel"),
+        "device_type": clean_data.get("device_type"),
+        "is_international": clean_data.get("is_international"),
+        "ip_risk_score": clean_data.get("ip_risk_score"),
+        "txn_count_1h": clean_data.get("txn_count_1h"),
+        "txn_count_24h": clean_data.get("txn_count_24h"),
+        "failed_txn_count_24h": clean_data.get("failed_txn_count_24h"),
+        "geo_distance_from_last_txn": clean_data.get("geo_distance_from_last_txn"),
+        "amount_deviation_from_user_mean": clean_data.get("amount_deviation_from_user_mean"),
+    }
+    return result
 
 
 # ============================================================
-# REAL-TIME AI TRANSACTION STREAM
+# REAL-TIME CSV DEMO STREAM
 # ============================================================
 
 stream_started = False
 
 
 def background_transaction_stream():
-
-    print("Starting AI Transaction Stream... 🚀")
-
+    print("Starting AI Transaction Stream...")
     try:
+        if not os.path.isfile(TEST_FILE):
+            print(f"Test CSV not found: {TEST_FILE}")
+            return
 
         df = pd.read_csv(TEST_FILE)
-
         for index, row in df.iterrows():
-
             socketio.sleep(3)
-
             data = row.to_dict()
 
             try:
-
                 result = analyze_transaction(data)
                 save_transaction(result)
-
                 log_transaction(
                     data,
                     result["transaction_status"],
                     result["risk_level"],
-                    result["reconstruction_error"]
+                    result["reconstruction_error"],
                 )
 
-                amount = data.get(
-                    "transaction_amount",
-                    0
-                )
-
-                merchant = data.get(
-                    "merchant_id",
-                    "Unknown"
-                )
-
+                amount = data.get("transaction_amount", 0)
+                merchant = data.get("merchant_id", "Unknown")
                 socketio.emit(
                     "new_transaction",
                     {
                         **result,
-                        "message":
-                            f"Merchant: {merchant} | "
-                            f"Amount: ₹{amount} | "
+                        "message": (
+                            f"Merchant: {merchant} | Amount: ₹{amount} | "
                             f"Status: {result['transaction_status']}"
-                    }
+                        ),
+                    },
                 )
+            except Exception as exc:
+                app.logger.warning("CSV row %s skipped: %s", index, exc)
+    except Exception as exc:
+        app.logger.exception("CSV stream failed: %s", exc)
 
-            except Exception as e:
-
-                print(
-                    f"Row {index} skipped because of error: {e}"
-                )
-
-    except Exception as e:
-
-        print(
-            "CSV file read error:",
-            e
-        )
-
-
-# ============================================================
-# SOCKET CONNECTION
-# ============================================================
 
 @socketio.on("connect")
 def handle_connect():
-
     global stream_started
-
-    print(
-        "Admin Dashboard Connected to Live Stream! 🟢"
-    )
-
-    # Prevent multiple streams when browser reconnects
+    print("Admin dashboard connected to live stream.")
     if not stream_started:
-
         stream_started = True
+        socketio.start_background_task(background_transaction_stream)
 
-        socketio.start_background_task(
-            background_transaction_stream
-        )
-# ============================================================
-# LOGIN
-# ============================================================
 
+# ============================================================
+# LOGIN + HOME
+# ============================================================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -558,38 +500,34 @@ def login():
 
     account_id = request.form.get("account_id", "").strip()
     password = request.form.get("password", "")
-
     if not account_id or not password:
         return render_template(
-            "index.html",
-            authenticated=False,
-            login_error="Please enter your account ID and password."
+            "index.html", authenticated=False,
+            login_error="Please enter your account ID and password.",
         ), 400
 
     user = get_auth_user(account_id)
-
     if user and check_password_hash(user["password_hash"], password):
         session["account_id"] = user["account_id"]
         session.permanent = True
         return redirect(url_for("home"))
 
     return render_template(
-        "index.html",
-        authenticated=False,
-        login_error="Invalid account ID or password."
+        "index.html", authenticated=False,
+        login_error="Invalid account ID or password.",
     ), 401
 
 
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
-# ============================================================
-# HOME
-# ============================================================
 
 @app.route("/", methods=["GET"])
 def home():
     if "account_id" not in session:
         return redirect(url_for("login"))
-
     return render_template("index.html", authenticated=True)
 
 
@@ -599,51 +537,45 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-
     try:
+        data = request.get_json(silent=True)
 
-        data = request.get_json()
-
-        if not data:
-
-            return jsonify({
-                "error": "No transaction data received."
-            }), 400
+        if not isinstance(data, dict):
+            return jsonify({"error": "Request body must be valid JSON"}), 400
 
         result = analyze_transaction(data)
-        save_transaction(result)
+        return jsonify(result), 200
 
-        log_transaction(
-            data,
-            result["transaction_status"],
-            result["risk_level"],
-            result["reconstruction_error"]
-        )
+    except Exception as exc:
+        app.logger.exception("Manual prediction failed")
+        return jsonify({"error": str(exc)}), 500
 
-        return jsonify(result)
 
-    except Exception as e:
+# ============================================================
+# VERIFICATION APIs (DEMO WORKFLOW)
+# ============================================================
 
-        print(
-            "Prediction error:",
-            e
-        )
-
-        return jsonify({
-            "error": str(e)
-        }), 400
-
-@app.route("/api/transactions/<transaction_id>/verify", methods=["POST"])
+@app.route(
+    "/api/transactions/<transaction_id>/verify",
+    methods=["POST"]
+)
 def api_start_verification(transaction_id):
     try:
         transaction = get_transaction(transaction_id)
 
         if transaction is None:
-            return jsonify({
-                "error": "Transaction not found."
-            }), 404
+            return jsonify({"error": "Transaction not found."}), 404
 
-        if transaction.get("transaction_status") != "Hold & Verify 🚨":
+        current_status = str(
+            transaction.get("transaction_status") or ""
+        )
+
+        if current_status.startswith(("Approved", "Rejected")):
+            return jsonify({
+                "error": "Transaction is already resolved."
+            }), 409
+
+        if not current_status.startswith("Hold & Verify"):
             return jsonify({
                 "error": "Transaction does not require verification."
             }), 400
@@ -651,7 +583,7 @@ def api_start_verification(transaction_id):
         verification_id = save_verification_event(
             transaction_id=transaction_id,
             customer_id=transaction.get("customer_id"),
-            verification_method="Android BiometricPrompt",
+            verification_method="Demo step-up verification",
             verification_status="PENDING"
         )
 
@@ -660,25 +592,28 @@ def api_start_verification(transaction_id):
             "transaction_id": transaction_id,
             "customer_id": transaction.get("customer_id"),
             "verification_id": verification_id,
-            "verification_method": "Android BiometricPrompt",
+            "verification_method": "Demo step-up verification",
             "verification_status": "PENDING"
-        })
+        }), 200
 
-    except Exception as e:
-        print("Verification start error:", e)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+
+    except Exception:
+        app.logger.exception("Verification start failed")
         return jsonify({
-            "error": str(e)
-        }), 400
+            "error": "Could not start verification."
+        }), 500
 
-@app.route("/api/transactions/<transaction_id>/verifications", methods=["GET"])
+
+@app.route(
+    "/api/transactions/<transaction_id>/verifications",
+    methods=["GET"]
+)
 def api_get_verifications(transaction_id):
     try:
-        transaction = get_transaction(transaction_id)
-
-        if transaction is None:
-            return jsonify({
-                "error": "Transaction not found."
-            }), 404
+        if get_transaction(transaction_id) is None:
+            return jsonify({"error": "Transaction not found."}), 404
 
         events = get_verification_events(transaction_id)
 
@@ -686,236 +621,247 @@ def api_get_verifications(transaction_id):
             "transaction_id": transaction_id,
             "count": len(events),
             "verification_events": events
-        })
+        }), 200
 
-    except Exception as e:
-        print("Verification history error:", e)
+    except Exception:
+        app.logger.exception("Verification history retrieval failed")
         return jsonify({
-            "error": str(e)
+            "error": "Could not retrieve verification history."
+        }), 500
+
+
+@app.route(
+    "/api/verifications/<int:verification_id>/status",
+    methods=["POST"]
+)
+def api_update_verification_status(verification_id):
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "A JSON request body is required."}), 400
+
+    new_status = data.get("status")
+    transaction_id = data.get("transaction_id")
+
+    if new_status not in {"APPROVED", "REJECTED"}:
+        return jsonify({
+            "error": "Status must be APPROVED or REJECTED."
         }), 400
 
-    
+    if not isinstance(transaction_id, str) or not transaction_id.strip():
+        return jsonify({"error": "Valid transaction_id is required."}), 400
+
+    try:
+        success = update_verification_status(
+            verification_id,
+            transaction_id.strip(),
+            new_status
+        )
+
+        if not success:
+            return jsonify({
+                "error": (
+                    "Verification not found, already resolved, "
+                    "or transaction is no longer awaiting verification."
+                )
+            }), 409
+
+        transaction = get_transaction(transaction_id.strip())
+
+        return jsonify({
+            "success": True,
+            "message": "Verification resolved successfully.",
+            "verification_id": verification_id,
+            "transaction_id": transaction_id.strip(),
+            "verification_status": new_status,
+            "transaction_status": transaction["transaction_status"]
+        }), 200
+
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    except Exception:
+        app.logger.exception("Verification status update failed")
+        return jsonify({
+            "error": "Could not update verification status."
+        }), 500
+
 # ============================================================
-# TRANSACTION HISTORY APIs
+# CUSTOMER APIs
 # ============================================================
 
 @app.route("/api/customers", methods=["POST"])
 def api_create_customer():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not data:
+        return jsonify({"error": "No valid customer JSON received."}), 400
+
+    customer_id = data.get("customer_id")
+    if not customer_id:
+        return jsonify({"error": "customer_id is required."}), 400
+
     try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "No customer data received."}), 400
-
-        customer_id = data.get("customer_id")
-
-        if not customer_id:
-            return jsonify({"error": "customer_id is required."}), 400
-
         create_customer(
             customer_id=customer_id,
             account_reference=data.get("account_reference"),
             full_name=data.get("full_name"),
             email=data.get("email"),
-            phone=data.get("phone")
+            phone=data.get("phone"),
         )
-
         return jsonify({
             "success": True,
             "message": "Customer registered successfully.",
-            "customer_id": str(customer_id)
+            "customer_id": str(customer_id),
         })
+    except Exception:
+        app.logger.exception("Customer registration failed")
+        return jsonify({"error": "Customer registration failed."}), 500
 
-    except Exception as e:
-        print("Customer registration error:", e)
-        return jsonify({"error": str(e)}), 400
-    
-
-@app.route("/api/transactions", methods=["GET"])
-def api_transactions():
-
-    filter_type = request.args.get("type", "all")
-
-    transactions = get_transactions(filter_type)
-
-    return jsonify({
-        "count": len(transactions),
-        "transactions": transactions
-    })
-
-
-@app.route("/api/transactions/<transaction_id>", methods=["GET"])
-def api_transaction_detail(transaction_id):
-
-    transaction = get_transaction(transaction_id)
-
-    if transaction is None:
-        return jsonify({
-            "error": "Transaction not found"
-        }), 404
-
-    return jsonify(transaction)
-
-# ============================================================
-# CUSTOMER TRANSACTION HISTORY API
-# ============================================================
 
 @app.route("/api/customers/<customer_id>/transactions", methods=["GET"])
 def api_customer_transactions(customer_id):
-
     try:
-        customer = get_customer(customer_id)
-
-        if customer is None:
-            return jsonify({
-                "error": "Customer not found."
-            }), 404
-
+        if get_customer(customer_id) is None:
+            return jsonify({"error": "Customer not found."}), 404
         transactions = get_customer_transactions(customer_id)
-
         return jsonify({
             "customer_id": str(customer_id),
             "count": len(transactions),
-            "transactions": transactions
+            "transactions": transactions,
         })
+    except Exception:
+        app.logger.exception("Customer transaction history lookup failed")
+        return jsonify({"error": "Could not retrieve customer transactions."}), 500
 
-    except Exception as e:
-
-        print("Customer transaction history error:", e)
-
-        return jsonify({
-            "error": str(e)
-        }), 400
-
-# ============================================================
-# CUSTOMER PROFILE API
-# ============================================================
 
 @app.route("/api/customers/<customer_id>", methods=["GET"])
 def api_customer_profile(customer_id):
-
     try:
         customer = get_customer(customer_id)
-
         if customer is None:
-            return jsonify({
-                "error": "Customer not found"
-            }), 404
-
+            return jsonify({"error": "Customer not found."}), 404
         devices = get_customer_devices(customer_id)
+        return jsonify({"customer": customer, "registered_devices": devices})
+    except Exception:
+        app.logger.exception("Customer profile lookup failed")
+        return jsonify({"error": "Could not retrieve customer profile."}), 500
 
-        return jsonify({
-            "customer": customer,
-            "registered_devices": devices
-        })
-
-    except Exception as e:
-        print("Customer profile error:", e)
-
-        return jsonify({
-            "error": str(e)
-        }), 400
-
-# ============================================================
-# DEVICE ENROLLMENT API
-# ============================================================
 
 @app.route("/api/customers/<customer_id>/devices", methods=["POST"])
 def api_register_device(customer_id):
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not data:
+        return jsonify({"error": "No valid device JSON received."}), 400
 
     try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({
-                "error": "No device data received."
-            }), 400
-
         customer = get_customer(customer_id)
-
         if customer is None:
-            return jsonify({
-                "error": "Customer not found."
-            }), 404
+            return jsonify({"error": "Customer not found."}), 404
 
         device_identifier = data.get("device_identifier")
         device_model = data.get("device_model")
         device_type = data.get("device_type", "mobile")
-
         if not device_identifier or not device_model:
             return jsonify({
                 "error": "device_identifier and device_model are required."
             }), 400
+        if device_type not in {"desktop", "mobile", "tablet", "unknown"}:
+            return jsonify({"error": "Unsupported device_type."}), 400
 
         device_id = register_device(
             customer_id=customer_id,
             device_identifier=device_identifier,
             device_model=device_model,
-            device_type=device_type
+            device_type=device_type,
         )
-
         return jsonify({
             "success": True,
             "message": "Device enrolled successfully.",
             "device_id": device_id,
             "customer_id": str(customer_id),
             "device_model": device_model,
-            "device_type": device_type
+            "device_type": device_type,
         })
+    except Exception:
+        app.logger.exception("Device enrollment failed")
+        return jsonify({"error": "Device enrollment failed."}), 500
 
-    except Exception as e:
 
-        print("Device enrollment error:", e)
+# ============================================================
+# TRANSACTION APIs
+# ============================================================
+
+@app.route("/api/transactions", methods=["GET"])
+def api_transactions():
+    filter_type = request.args.get("type", "all")
+    try:
+        transactions = get_transactions(filter_type)
+        return jsonify({"count": len(transactions), "transactions": transactions})
+    except Exception:
+        app.logger.exception("Transactions query failed")
+        return jsonify({"error": "Could not retrieve transactions."}), 500
+
+
+@app.route("/api/transactions/<transaction_id>", methods=["GET"])
+def api_transaction_detail(transaction_id):
+    try:
+        transaction = get_transaction(transaction_id)
+        if transaction is None:
+            return jsonify({"error": "Transaction not found."}), 404
+        return jsonify(transaction)
+    except Exception:
+        app.logger.exception("Transaction detail lookup failed")
+        return jsonify({"error": "Could not retrieve transaction."}), 500
+
+# ============================================================
+# BACKEND HEALTH CHECK
+# ============================================================
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    try:
+        model_features = int(model.input_shape[-1])
+        preprocessor_features = len(feature_names)
 
         return jsonify({
-            "error": str(e)
-        }), 400
-# API to update verification status (APPROVED / REJECTED)
-
-@app.route('/api/verifications/<int:verification_id>/status', methods=['POST'])
-def api_update_verification_status(verification_id):
-    data = request.json
-    new_status = data.get("status")
-    transaction_id = data.get("transaction_id")
-
-    if new_status not in ["APPROVED", "REJECTED"]:
-        return jsonify({"error": "Invalid status. Must be APPROVED or REJECTED"}), 400
-
-    if not transaction_id:
-        return jsonify({"error": "transaction_id is required"}), 400
-
-    # Update the status in the database
-    success = update_verification_status(verification_id, transaction_id, new_status)
-    
-    if success:
-        return jsonify({
-            "message": "Verification and transaction status updated successfully",
-            "verification_id": verification_id,
-            "transaction_id": transaction_id,
-            "new_status": new_status
+            "status": "ok",
+            "service": "zero-day-fraud-detection",
+            "database": "initialized",
+            "model_loaded": model is not None,
+            "preprocessor_loaded": preprocessor is not None,
+            "model_input_features": model_features,
+            "preprocessor_features": preprocessor_features,
+            "feature_dimensions_match": (
+                model_features == preprocessor_features
+            ),
+            "threshold": float(THRESHOLD)
         }), 200
-    else:
-        return jsonify({"error": "Failed to update database"}), 500
 
-
+    except Exception:
+        app.logger.exception("Health check failed")
+        return jsonify({
+            "status": "error",
+            "message": "Backend health check failed"
+        }), 500
 # ============================================================
 # RUN APPLICATION
 # ============================================================
 
 if __name__ == "__main__":
-
     print("\n" + "=" * 60)
-    print("🚀 ZERO-DAY FRAUD DETECTION SYSTEM")
+    print("ZERO-DAY FRAUD DETECTION SYSTEM — DEMO")
     print("=" * 60)
-    print(f"Model     : {MODEL_FILE}")
-    print(f"Features  : {len(feature_names)}")
-    print(f"Threshold : {THRESHOLD:.6f}")
+    print(f"Model      : {MODEL_FILE}")
+    print(f"Preprocessor: {PREPROCESSOR_FILE}")
+    print(f"Features   : {len(feature_names)}")
+    print(f"Threshold  : {THRESHOLD:.6f}")
     print("=" * 60)
-
+    # debug=True is for local development only. Do not expose the debugger
+    # to the public internet.
     socketio.run(
         app,
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=5000,
         debug=True,
-        allow_unsafe_werkzeug=True
+        allow_unsafe_werkzeug=True,
     )
