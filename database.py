@@ -33,6 +33,18 @@ def init_database():
     """)
 
     # --------------------------------------------------------
+    # 1A. USER AUTHENTICATION
+    # --------------------------------------------------------
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_auth (
+            auth_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_id TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    # --------------------------------------------------------
     # 2. REGISTERED DEVICES
     # --------------------------------------------------------
     conn.execute("""
@@ -478,6 +490,33 @@ def update_verification_status(verification_id, transaction_id, new_status):
     except Exception as e:
         print(f"Database Error in update_verification_status: {e}")
         return False
+    finally:
+        conn.close()
+def create_auth_user(account_id, password_hash):
+    conn = get_connection()
+    try:
+        conn.execute(
+            """
+            INSERT INTO user_auth (account_id, password_hash, created_at)
+            VALUES (?, ?, ?)
+            """,
+            (account_id, password_hash, datetime.now().isoformat())
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+
+def get_auth_user(account_id):
+    conn = get_connection()
+    try:
+        return conn.execute(
+            "SELECT * FROM user_auth WHERE account_id = ?",
+            (account_id,)
+        ).fetchone()
     finally:
         conn.close()
         

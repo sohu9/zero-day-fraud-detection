@@ -17,9 +17,12 @@ from database import (
     get_customer_transactions,
     save_verification_event,
     get_verification_events,
-    update_verification_status
+    update_verification_status,
+    create_auth_user,
+    get_auth_user,
 )
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template , session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO
 from flask_cors import CORS
 
@@ -29,6 +32,12 @@ from data_pipeline import add_time_features, ID_COLUMNS, TARGET_COLUMN
 app = Flask(__name__)
 init_database()
 CORS(app)
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
+
+if not app.config["SECRET_KEY"]:
+    raise RuntimeError(
+        "FLASK_SECRET_KEY environment variable set karo."
+    )
 
 # WebSockets initialize
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -537,6 +546,26 @@ def handle_connect():
         socketio.start_background_task(
             background_transaction_stream
         )
+# ============================================================
+# LOGIN
+# ============================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("index.html")
+
+    account_id = request.form.get("account_id", "").strip()
+    password = request.form.get("password", "")
+
+    user = get_auth_user(account_id)
+
+    if user and check_password_hash(user["password_hash"], password):
+        session["account_id"] = user["account_id"]
+        return redirect(url_for("home"))
+
+    return "Invalid account ID or password", 401
+        
 
 
 # ============================================================
@@ -545,10 +574,10 @@ def handle_connect():
 
 @app.route("/", methods=["GET"])
 def home():
+    if "account_id" not in session:
+        return redirect(url_for("login"))
 
-    return render_template(
-        "index.html"
-    )
+    return render_template("index.html")
 
 
 # ============================================================

@@ -1251,7 +1251,7 @@
             <p>Zero-Day Payment Fraud Detection</p>
         </div>
 
-        <form id="loginForm">
+        <form id="loginForm" method="POST" action="/login">
 
             <div class="login-field">
                 <label for="loginAccount">Account ID</label>
@@ -1259,6 +1259,7 @@
                 <input
                     type="text"
                     id="loginAccount"
+                    name="account_id"
                     placeholder="Enter your account ID"
                     autocomplete="username"
                     required
@@ -1271,6 +1272,7 @@
                 <input
                     type="password"
                     id="loginPassword"
+                     name="password"
                     placeholder="Enter your password"
                     autocomplete="current-password"
                     required
