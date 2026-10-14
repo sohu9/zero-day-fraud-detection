@@ -19,81 +19,51 @@ ID_COLUMNS = [
 
 def add_time_features(df):
     """
-    Convert transaction_time into meaningful numerical features.
-    Raw timestamp is not passed directly to the model.
+    Convert transaction_time into 3 meaningful numerical features:
+    transaction_hour, transaction_day_of_week, is_weekend.
     """
-
     df = df.copy()
 
     if "transaction_time" in df.columns:
-
-        dt = pd.to_datetime(
-            df["transaction_time"],
-            errors="coerce"
-        )
+        dt = pd.to_datetime(df["transaction_time"], errors="coerce")
 
         if dt.isna().any():
-            raise ValueError(
-                "Invalid transaction_time value found."
-            )
+            raise ValueError("Invalid transaction_time value found.")
 
-        # Hour as continuous value: 0.0 - 23.999...
         df["transaction_hour"] = (
             dt.dt.hour
             + dt.dt.minute / 60.0
             + dt.dt.second / 3600.0
         )
-
-        # Monday = 0 ... Sunday = 6
         df["transaction_day_of_week"] = dt.dt.dayofweek
+        df["is_weekend"] = (dt.dt.dayofweek >= 5).astype(int)
 
-        # Weekend = 1, weekday = 0
-        df["is_weekend"] = (
-            dt.dt.dayofweek >= 5
-        ).astype(int)
-
-        # Raw timestamp removed
         df = df.drop(columns=["transaction_time"])
 
     return df
 
 
 def build_preprocessor(df):
-
     df = df.copy()
 
     # Remove IDs from ML features
-    df = df.drop(
-        columns=[
-            col for col in ID_COLUMNS
-            if col in df.columns
-        ]
-    )
+    df = df.drop(columns=[col for col in ID_COLUMNS if col in df.columns])
 
-    # Remove target
+    # Remove target column
     if TARGET_COLUMN in df.columns:
         X = df.drop(columns=[TARGET_COLUMN])
     else:
         X = df.copy()
 
-    # Exclude post-auth risk score from model inputs
-    X = X.drop(
-        columns=["post_auth_risk_score"],
-        errors="ignore"
-    )
-
-    # Convert timestamp into time features
+    # Convert timestamp into 3 time features (Total = 19 features)
     X = add_time_features(X)
 
-    # Find categorical features
     categorical_columns = X.select_dtypes(
         include=["object", "string", "category"]
     ).columns.tolist()
 
-    # Remaining features are numerical
     numerical_columns = [
-        col for col in X.columns
-        if col not in categorical_columns
+        col for col in X.columns if col not in categorical_columns
     ]
 
     print("\nCategorical features:")
@@ -117,178 +87,65 @@ def build_preprocessor(df):
     )
 
     numerical_pipeline = Pipeline(
-        steps=[
-            ("scaler", StandardScaler())
-        ]
+        steps=[("scaler", StandardScaler())]
     )
 
     preprocessor = ColumnTransformer(
         transformers=[
-            (
-                "numerical",
-                numerical_pipeline,
-                numerical_columns
-            ),
-            (
-                "categorical",
-                categorical_pipeline,
-                categorical_columns
-            )
+            ("numerical", numerical_pipeline, numerical_columns),
+            ("categorical", categorical_pipeline, categorical_columns)
         ],
         remainder="drop"
     )
 
-    return (
-        preprocessor,
-        numerical_columns,
-        categorical_columns
-    )
-
-    numerical_pipeline = Pipeline(
-        steps=[
-            (
-                "scaler",
-                StandardScaler()
-            )
-        ]
-    )
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            (
-                "numerical",
-                numerical_pipeline,
-                numerical_columns
-            ),
-            (
-                "categorical",
-                categorical_pipeline,
-                categorical_columns
-            )
-        ],
-        remainder="drop"
-    )
-
-    return (
-        preprocessor,
-        numerical_columns,
-        categorical_columns
-    )
+    return preprocessor, numerical_columns, categorical_columns
 
 
 def run_pipeline(
     data_path="data/transactions_train.csv",
     save_preprocessor=True
 ):
-
     print("🚀 Data Pipeline Started...")
 
     df = pd.read_csv(data_path)
-
-    print(
-        f"✅ Dataset loaded: "
-        f"{df.shape[0]} rows × {df.shape[1]} columns"
-    )
+    print(f"✅ Dataset loaded: {df.shape[0]} rows × {df.shape[1]} columns")
 
     if TARGET_COLUMN not in df.columns:
-        raise ValueError(
-            f"'{TARGET_COLUMN}' column not found."
-        )
+        raise ValueError(f"'{TARGET_COLUMN}' column not found.")
 
     y = df[TARGET_COLUMN].copy()
 
-    # Build preprocessing using training data
-    (
-        preprocessor,
-        numerical_columns,
-        categorical_columns
-    ) = build_preprocessor(df)
+    preprocessor, numerical_columns, categorical_columns = build_preprocessor(df)
 
-    # Prepare X
     X = df.drop(columns=[TARGET_COLUMN])
-
-    # Remove IDs only from model input
-    X = X.drop(
-        columns=[
-            col for col in ID_COLUMNS
-            if col in X.columns
-        ]
-    )
-
-    # Time engineering
+    X = X.drop(columns=[col for col in ID_COLUMNS if col in X.columns])
     X = add_time_features(X)
 
     print("\n🔧 Fitting preprocessing on TRAINING data...")
+    X_processed = np.asarray(preprocessor.fit_transform(X), dtype=np.float32)
 
-    X_processed = preprocessor.fit_transform(X)
+    feature_names = numerical_columns + categorical_columns
 
-    X_processed = np.asarray(
-        X_processed,
-        dtype=np.float32
-    )
-
-    # ColumnTransformer output order:
-    # numerical first, categorical second
-    feature_names = (
-        numerical_columns +
-        categorical_columns
-    )
-
-    print(
-        f"✅ Preprocessing complete."
-    )
-
-    print(
-        f"✅ Final feature count: "
-        f"{X_processed.shape[1]}"
-    )
+    print("✅ Preprocessing complete.")
+    print(f"✅ Final feature count: {X_processed.shape[1]}")
 
     if save_preprocessor:
-
         artifact = {
             "preprocessor": preprocessor,
             "feature_names": feature_names,
             "numerical_columns": numerical_columns,
             "categorical_columns": categorical_columns
         }
-
-        joblib.dump(
-            artifact,
-            "preprocessor.joblib"
-        )
-
-        print(
-            "💾 Saved: preprocessor.joblib"
-        )
+        joblib.dump(artifact, "preprocessor.joblib")
+        print("💾 Saved: preprocessor.joblib")
 
     return X_processed, y, feature_names
 
 
 if __name__ == "__main__":
-
-    X_train, y_train, feature_names = run_pipeline()
-
+    X_train, y_train, feature_names = run_pipeline(save_preprocessor=False)
     print("\n" + "=" * 50)
     print("PIPELINE TEST RESULT")
     print("=" * 50)
-
     print("Processed X shape :", X_train.shape)
-    print("Target shape      :", y_train.shape)
     print("Feature count     :", len(feature_names))
-
-    print(
-        "Genuine count     :",
-        int((y_train == 0).sum())
-    )
-
-    print(
-        "Fraud count       :",
-        int((y_train == 1).sum())
-    )
-
-    print("\nModel features:")
-
-    for i, name in enumerate(feature_names):
-        print(f"{i + 1}. {name}")
-
-    print("\n🎉 Pipeline test completed.")

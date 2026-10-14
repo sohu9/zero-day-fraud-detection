@@ -1,5 +1,7 @@
+import os
 import sqlite3
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 
 DATABASE_FILE = "transactions.db"
@@ -18,9 +20,7 @@ def get_connection():
 def init_database():
     conn = get_connection()
 
-    # --------------------------------------------------------
     # 1. CUSTOMERS / ACCOUNTS
-    # --------------------------------------------------------
     conn.execute("""
         CREATE TABLE IF NOT EXISTS customers (
             customer_id TEXT PRIMARY KEY,
@@ -32,9 +32,7 @@ def init_database():
         )
     """)
 
-    # --------------------------------------------------------
     # 1A. USER AUTHENTICATION
-    # --------------------------------------------------------
     conn.execute("""
         CREATE TABLE IF NOT EXISTS user_auth (
             auth_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,9 +42,7 @@ def init_database():
         )
     """)
 
-    # --------------------------------------------------------
     # 2. REGISTERED DEVICES
-    # --------------------------------------------------------
     conn.execute("""
         CREATE TABLE IF NOT EXISTS registered_devices (
             device_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,9 +57,7 @@ def init_database():
         )
     """)
 
-    # --------------------------------------------------------
-    # 3. EXISTING TRANSACTIONS TABLE
-    # --------------------------------------------------------
+    # 3. TRANSACTIONS TABLE
     conn.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             transaction_id TEXT PRIMARY KEY,
@@ -79,14 +73,10 @@ def init_database():
         )
     """)
 
-    # --------------------------------------------------------
-    # 4. ADD NEW TRANSACTION CONTEXT COLUMNS
-    # --------------------------------------------------------
+    # 4. TRANSACTION CONTEXT COLUMNS
     existing_columns = {
         row["name"]
-        for row in conn.execute(
-            "PRAGMA table_info(transactions)"
-        ).fetchall()
+        for row in conn.execute("PRAGMA table_info(transactions)").fetchall()
     }
 
     new_columns = {
@@ -106,13 +96,10 @@ def init_database():
     for column_name, column_type in new_columns.items():
         if column_name not in existing_columns:
             conn.execute(
-                f"ALTER TABLE transactions ADD COLUMN "
-                f"{column_name} {column_type}"
+                f"ALTER TABLE transactions ADD COLUMN {column_name} {column_type}"
             )
 
-    # --------------------------------------------------------
     # 5. VERIFICATION EVENTS
-    # --------------------------------------------------------
     conn.execute("""
         CREATE TABLE IF NOT EXISTS verification_events (
             verification_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,15 +113,29 @@ def init_database():
         )
     """)
 
+    # 6. ENSURE DEFAULT ADMIN ACCOUNT EXISTS FOR DEMO
+    default_admin = os.environ.get("DEFAULT_ADMIN_ID", "admin")
+    default_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "admin123")
+    existing_admin = conn.execute(
+        "SELECT 1 FROM user_auth LIMIT 1"
+    ).fetchone()
+    if existing_admin is None:
+        conn.execute(
+            """
+            INSERT INTO user_auth (account_id, password_hash, created_at)
+            VALUES (?, ?, ?)
+            """,
+            (
+                default_admin,
+                generate_password_hash(default_password),
+                datetime.now().isoformat(timespec="seconds"),
+            ),
+        )
+
     conn.commit()
     conn.close()
 
     print("✅ SQLite database initialized successfully.")
-    print("   • Customers table ready")
-    print("   • Registered devices table ready")
-    print("   • Transactions table ready")
-    print("   • Transaction context fields ready")
-    print("   • Verification events table ready")
 
 
 # ============================================================
@@ -149,7 +150,6 @@ def create_customer(
     phone=None
 ):
     conn = get_connection()
-
     conn.execute("""
         INSERT OR IGNORE INTO customers (
             customer_id,
@@ -168,22 +168,17 @@ def create_customer(
         phone,
         datetime.now().isoformat(timespec="seconds")
     ))
-
     conn.commit()
     conn.close()
 
 
 def get_customer(customer_id):
     conn = get_connection()
-
-    row = conn.execute("""
-        SELECT *
-        FROM customers
-        WHERE customer_id = ?
-    """, (str(customer_id),)).fetchone()
-
+    row = conn.execute(
+        "SELECT * FROM customers WHERE customer_id = ?",
+        (str(customer_id),)
+    ).fetchone()
     conn.close()
-
     return dict(row) if row else None
 
 
@@ -198,8 +193,7 @@ def register_device(
     device_type=None
 ):
     conn = get_connection()
-
-    conn.execute("""
+    cursor = conn.execute("""
         INSERT INTO registered_devices (
             customer_id,
             device_identifier,
@@ -216,14 +210,14 @@ def register_device(
         device_type,
         datetime.now().isoformat(timespec="seconds")
     ))
-
+    device_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    return device_id
 
 
 def get_customer_devices(customer_id):
     conn = get_connection()
-
     rows = conn.execute("""
         SELECT *
         FROM registered_devices
@@ -231,20 +225,16 @@ def get_customer_devices(customer_id):
         AND is_active = 1
         ORDER BY registered_at DESC
     """, (str(customer_id),)).fetchall()
-
     conn.close()
-
     return [dict(row) for row in rows]
 
 
 # ============================================================
-# SAVE TRANSACTION
+# SAVE TRANSACTION (SINGLE & BATCH)
 # ============================================================
 
 def save_transaction(result):
-
     conn = get_connection()
-
     conn.execute("""
         INSERT OR REPLACE INTO transactions (
             transaction_id,
@@ -257,7 +247,6 @@ def save_transaction(result):
             threshold,
             xai_explanation,
             created_at,
-
             transaction_time,
             payment_channel,
             device_type,
@@ -275,8 +264,6 @@ def save_transaction(result):
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
     """, (
-
-        # Existing ML / transaction fields
         str(result.get("transaction_id")),
         str(result.get("customer_id")),
         str(result.get("merchant_id")),
@@ -287,211 +274,207 @@ def save_transaction(result):
         float(result.get("threshold") or 0),
         result.get("xai_explanation", ""),
         datetime.now().isoformat(timespec="seconds"),
-
-        # New transaction context
         result.get("transaction_time"),
         result.get("payment_channel"),
         result.get("device_type"),
-
         int(result.get("is_international") or 0),
-
         float(result.get("ip_risk_score") or 0),
-
         int(result.get("txn_count_1h") or 0),
         int(result.get("txn_count_24h") or 0),
         int(result.get("failed_txn_count_24h") or 0),
-
         float(result.get("geo_distance_from_last_txn") or 0),
-
         float(result.get("amount_deviation_from_user_mean") or 0),
-
         float(result.get("post_auth_risk_score") or 0)
     ))
-
     conn.commit()
     conn.close()
 
 
 # ============================================================
-# TRANSACTION LIST
+# TRANSACTION LIST & FAST STATS
 # ============================================================
 
 def get_transactions(filter_type="all"):
-
     conn = get_connection()
 
     if filter_type == "approved":
-
         rows = conn.execute("""
-            SELECT *
-            FROM transactions
+            SELECT * FROM transactions
             WHERE transaction_status LIKE 'Approved%'
             ORDER BY created_at DESC
         """).fetchall()
-
     elif filter_type == "hold":
-
         rows = conn.execute("""
-            SELECT *
-            FROM transactions
+            SELECT * FROM transactions
             WHERE transaction_status LIKE 'Hold & Verify%'
             ORDER BY created_at DESC
         """).fetchall()
-
     elif filter_type == "high":
-
         rows = conn.execute("""
-            SELECT *
-            FROM transactions
+            SELECT * FROM transactions
             WHERE risk_level = 'High'
             ORDER BY created_at DESC
         """).fetchall()
-
     else:
-
         rows = conn.execute("""
-            SELECT *
-            FROM transactions
+            SELECT * FROM transactions
             ORDER BY created_at DESC
         """).fetchall()
 
     conn.close()
-
     return [dict(row) for row in rows]
 
 
-# ============================================================
-# SINGLE TRANSACTION
-# ============================================================
+def get_dashboard_stats():
+    conn = get_connection()
+    row = conn.execute("""
+        SELECT
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN transaction_status LIKE 'Approved%' THEN 1 ELSE 0 END) AS approved_count,
+            SUM(CASE WHEN transaction_status LIKE 'Hold & Verify%' THEN 1 ELSE 0 END) AS hold_count,
+            SUM(CASE WHEN risk_level = 'High' AND transaction_status NOT LIKE 'Approved%' THEN 1 ELSE 0 END) AS high_count,
+            SUM(CASE WHEN transaction_status LIKE 'Rejected%' THEN 1 ELSE 0 END) AS rejected_count
+        FROM transactions
+    """).fetchone()
+    conn.close()
+    return {
+        "all": int(row["total_count"] or 0),
+        "approved": int(row["approved_count"] or 0),
+        "hold": int(row["hold_count"] or 0),
+        "high": int(row["high_count"] or 0),
+        "rejected": int(row["rejected_count"] or 0),
+    }
+
 
 def get_transaction(transaction_id):
-
     conn = get_connection()
-
-    row = conn.execute("""
-        SELECT *
-        FROM transactions
-        WHERE transaction_id = ?
-    """, (str(transaction_id),)).fetchone()
-
+    row = conn.execute(
+        "SELECT * FROM transactions WHERE transaction_id = ?",
+        (str(transaction_id),)
+    ).fetchone()
     conn.close()
-
     return dict(row) if row else None
 
 
-# ============================================================
-# CUSTOMER TRANSACTION HISTORY
-# ============================================================
-
 def get_customer_transactions(customer_id, limit=20):
-
     conn = get_connection()
-
     rows = conn.execute("""
         SELECT *
         FROM transactions
         WHERE customer_id = ?
         ORDER BY created_at DESC
         LIMIT ?
-    """, (
-        str(customer_id),
-        int(limit)
-    )).fetchall()
-
+    """, (str(customer_id), int(limit))).fetchall()
     conn.close()
-
     return [dict(row) for row in rows]
 
 
 # ============================================================
-# VERIFICATION
+# VERIFICATION WORKFLOW
 # ============================================================
 
 def save_verification_event(
     transaction_id,
     customer_id,
     verification_method,
-    verification_status
+    verification_status="PENDING"
 ):
-
     conn = get_connection()
+    try:
+        existing_pending = conn.execute("""
+            SELECT verification_id
+            FROM verification_events
+            WHERE transaction_id = ? AND verification_status = 'PENDING'
+        """, (str(transaction_id),)).fetchone()
 
-    cursor = conn.execute("""
-        INSERT INTO verification_events (
-            transaction_id,
-            customer_id,
+        if existing_pending is not None:
+            return int(existing_pending["verification_id"])
+
+        cursor = conn.execute("""
+            INSERT INTO verification_events (
+                transaction_id,
+                customer_id,
+                verification_method,
+                verification_status,
+                verified_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            str(transaction_id),
+            str(customer_id),
             verification_method,
             verification_status,
-            verified_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        str(transaction_id),
-        str(customer_id),
-        verification_method,
-        verification_status,
-        datetime.now().isoformat(timespec="seconds")
-    ))
-
-    verification_id = cursor.lastrowid
-
-    conn.commit()
-    conn.close()
-
-    return verification_id
+            datetime.now().isoformat(timespec="seconds")
+        ))
+        verification_id = cursor.lastrowid
+        conn.commit()
+        return verification_id
+    finally:
+        conn.close()
 
 
 def get_verification_events(transaction_id):
-
     conn = get_connection()
-
     rows = conn.execute("""
         SELECT *
         FROM verification_events
         WHERE transaction_id = ?
         ORDER BY verified_at DESC
     """, (str(transaction_id),)).fetchall()
-
     conn.close()
-
     return [dict(row) for row in rows]
 
+
 def update_verification_status(verification_id, transaction_id, new_status):
-    """
-    Updates the verification event status (APPROVED/REJECTED) 
-    and updates the corresponding transaction status.
-    """
+    if new_status not in {"APPROVED", "REJECTED"}:
+        raise ValueError("Status must be APPROVED or REJECTED.")
+
     conn = get_connection()
     try:
-        # 1. Update verification event
-        conn.execute(
-            """
-            UPDATE verification_events 
-            SET verification_status = ?, verified_at = CURRENT_TIMESTAMP 
+        txn = conn.execute(
+            "SELECT transaction_status FROM transactions WHERE transaction_id = ?",
+            (str(transaction_id),)
+        ).fetchone()
+        if txn is None or not str(txn["transaction_status"] or "").startswith("Hold & Verify"):
+            return False
+
+        cursor = conn.execute("""
+            UPDATE verification_events
+            SET verification_status = ?, verified_at = ?
             WHERE verification_id = ?
-            """,
-            (new_status, verification_id)
-        )
-        
-        # 2. Map verification status to exact transaction status strings
+              AND transaction_id = ?
+              AND verification_status = 'PENDING'
+        """, (
+            new_status,
+            datetime.now().isoformat(timespec="seconds"),
+            int(verification_id),
+            str(transaction_id)
+        ))
+
+        if cursor.rowcount == 0:
+            return False
+
         if new_status == "APPROVED":
-            txn_status = "Approved ✅"
+            txn_status = "Approved (Biometric Verified) ✅"
+            new_risk = "Verified"
         else:
-            txn_status = "Rejected ❌"
-            
-        # 3. Update transaction status
+            txn_status = "Rejected (Blocked) ❌"
+            new_risk = "High"
+
         conn.execute(
-            "UPDATE transactions SET transaction_status = ? WHERE transaction_id = ?",
-            (txn_status, transaction_id)
+            "UPDATE transactions SET transaction_status = ?, risk_level = ? WHERE transaction_id = ?",
+            (txn_status, new_risk, str(transaction_id))
         )
-        
         conn.commit()
         return True
-    except Exception as e:
-        print(f"Database Error in update_verification_status: {e}")
-        return False
     finally:
         conn.close()
+
+
+# ============================================================
+# USER AUTHENTICATION
+# ============================================================
+
 def create_auth_user(account_id, password_hash):
     conn = get_connection()
     try:
@@ -500,7 +483,7 @@ def create_auth_user(account_id, password_hash):
             INSERT INTO user_auth (account_id, password_hash, created_at)
             VALUES (?, ?, ?)
             """,
-            (account_id, password_hash, datetime.now().isoformat())
+            (account_id, password_hash, datetime.now().isoformat(timespec="seconds"))
         )
         conn.commit()
         return True
@@ -519,6 +502,3 @@ def get_auth_user(account_id):
         ).fetchone()
     finally:
         conn.close()
-        
-        
-
