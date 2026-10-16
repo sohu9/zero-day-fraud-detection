@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash
@@ -14,7 +13,7 @@ def get_connection():
 
 
 # ============================================================
-# DATABASE INITIALIZATION
+# DATABASE INITIALIZATION & AUTO-MIGRATION
 # ============================================================
 
 def init_database():
@@ -28,6 +27,7 @@ def init_database():
             full_name TEXT,
             email TEXT,
             phone TEXT,
+            home_city TEXT DEFAULT 'Nashik, MH, IN',
             created_at TEXT
         )
     """)
@@ -42,7 +42,7 @@ def init_database():
         )
     """)
 
-    # 2. REGISTERED DEVICES
+    # 2. REGISTERED DEVICES (Trusted Device Binding)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS registered_devices (
             device_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +73,7 @@ def init_database():
         )
     """)
 
-    # 4. TRANSACTION CONTEXT COLUMNS
+    # 4. TRANSACTION CONTEXT & FORENSIC TELEMETRY COLUMNS (Auto-Migration)
     existing_columns = {
         row["name"]
         for row in conn.execute("PRAGMA table_info(transactions)").fetchall()
@@ -91,6 +91,14 @@ def init_database():
         "geo_distance_from_last_txn": "REAL",
         "amount_deviation_from_user_mean": "REAL",
         "post_auth_risk_score": "REAL",
+        "account_age_days": "INTEGER",
+        "security_tier": "TEXT",
+        "ip_address": "TEXT",
+        "geo_location": "TEXT",
+        "device_name": "TEXT",
+        "device_identifier": "TEXT",
+        "device_trust_status": "TEXT",
+        "forensic_summary": "TEXT",
     }
 
     for column_name, column_type in new_columns.items():
@@ -99,7 +107,7 @@ def init_database():
                 f"ALTER TABLE transactions ADD COLUMN {column_name} {column_type}"
             )
 
-    # 5. VERIFICATION EVENTS
+    # 5. VERIFICATION EVENTS (Step-Up Biometric / Face Scan Trail)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS verification_events (
             verification_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,9 +121,7 @@ def init_database():
         )
     """)
 
-    # 6. ENSURE DEFAULT ADMIN ACCOUNT EXISTS FOR DEMO
-    default_admin = os.environ.get("DEFAULT_ADMIN_ID", "admin")
-    default_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "admin123")
+    # 6. DEFAULT ADMIN ACCOUNT SEEDING
     existing_admin = conn.execute(
         "SELECT 1 FROM user_auth LIMIT 1"
     ).fetchone()
@@ -126,20 +132,58 @@ def init_database():
             VALUES (?, ?, ?)
             """,
             (
-                default_admin,
-                generate_password_hash(default_password),
+                "admin",
+                generate_password_hash("admin123"),
                 datetime.now().isoformat(timespec="seconds"),
             ),
         )
+
+    # 7. SEED DEFAULT CUSTOMER PROFILE (Aun's Primary Account & Trusted Device)
+    conn.execute("""
+        INSERT OR IGNORE INTO customers (
+            customer_id, account_reference, full_name, email, phone, home_city, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "11453",
+        "ACC-AUN-11453",
+        "Mohammad Aun Saeed Akhtar",
+        "aun.akhtar@fraudguard.ai",
+        "+91-9876543210",
+        "Nashik, Maharashtra, IN",
+        datetime.now().isoformat(timespec="seconds"),
+    ))
+
+    existing_device = conn.execute(
+        "SELECT 1 FROM registered_devices WHERE customer_id = ? AND device_identifier = ?",
+        ("11453", "DEV-AUN-IPHONE15-PRO")
+    ).fetchone()
+    if existing_device is None:
+        conn.execute("""
+            INSERT INTO registered_devices (
+                customer_id, device_identifier, device_model, device_type, is_active, registered_at
+            )
+            VALUES (?, ?, ?, ?, 1, ?)
+        """, (
+            "11453",
+            "DEV-AUN-IPHONE15-PRO",
+            "Aun's Trusted iPhone 15 Pro (iOS 18.2)",
+            "mobile",
+            datetime.now().isoformat(timespec="seconds"),
+        ))
 
     conn.commit()
     conn.close()
 
     print("✅ SQLite database initialized successfully.")
+    print("   • Customers & Default Profile ready")
+    print("   • Registered trusted devices table ready")
+    print("   • Transactions & Hacker Forensic Telemetry fields ready")
+    print("   • 3-Tier Adaptive Verification events table ready")
 
 
 # ============================================================
-# CUSTOMER / ACCOUNT
+# CUSTOMER & DEVICE TRUST MANAGEMENT
 # ============================================================
 
 def create_customer(
@@ -162,8 +206,8 @@ def create_customer(
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
         str(customer_id),
-        account_reference,
-        full_name,
+        account_reference or f"ACC-{customer_id}",
+        full_name or f"Customer #{customer_id}",
         email,
         phone,
         datetime.now().isoformat(timespec="seconds")
@@ -182,9 +226,29 @@ def get_customer(customer_id):
     return dict(row) if row else None
 
 
-# ============================================================
-# REGISTERED DEVICES
-# ============================================================
+def is_device_trusted(customer_id, device_identifier=None, device_model=None):
+    conn = get_connection()
+    try:
+        if device_identifier:
+            row = conn.execute("""
+                SELECT * FROM registered_devices
+                WHERE customer_id = ? AND device_identifier = ? AND is_active = 1
+            """, (str(customer_id), str(device_identifier))).fetchone()
+            if row:
+                return True
+
+        if device_model:
+            row = conn.execute("""
+                SELECT * FROM registered_devices
+                WHERE customer_id = ? AND device_model = ? AND is_active = 1
+            """, (str(customer_id), str(device_model))).fetchone()
+            if row:
+                return True
+
+        return False
+    finally:
+        conn.close()
+
 
 def register_device(
     customer_id,
@@ -193,27 +257,38 @@ def register_device(
     device_type=None
 ):
     conn = get_connection()
-    cursor = conn.execute("""
-        INSERT INTO registered_devices (
-            customer_id,
-            device_identifier,
-            device_model,
-            device_type,
-            is_active,
-            registered_at
-        )
-        VALUES (?, ?, ?, ?, 1, ?)
-    """, (
-        str(customer_id),
-        device_identifier,
-        device_model,
-        device_type,
-        datetime.now().isoformat(timespec="seconds")
-    ))
-    device_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return device_id
+    try:
+        identifier = device_identifier or f"DEV-{customer_id}-{device_type or 'GENERIC'}"
+        existing = conn.execute("""
+            SELECT device_id FROM registered_devices
+            WHERE customer_id = ? AND device_identifier = ? AND is_active = 1
+        """, (str(customer_id), str(identifier))).fetchone()
+
+        if existing:
+            return int(existing["device_id"])
+
+        cursor = conn.execute("""
+            INSERT INTO registered_devices (
+                customer_id,
+                device_identifier,
+                device_model,
+                device_type,
+                is_active,
+                registered_at
+            )
+            VALUES (?, ?, ?, ?, 1, ?)
+        """, (
+            str(customer_id),
+            str(identifier),
+            device_model or "Biometric Verified Device",
+            device_type or "mobile",
+            datetime.now().isoformat(timespec="seconds")
+        ))
+        device_id = cursor.lastrowid
+        conn.commit()
+        return device_id
+    finally:
+        conn.close()
 
 
 def get_customer_devices(customer_id):
@@ -230,7 +305,7 @@ def get_customer_devices(customer_id):
 
 
 # ============================================================
-# SAVE TRANSACTION (SINGLE & BATCH)
+# SAVE TRANSACTION (WITH FORENSIC TELEMETRY)
 # ============================================================
 
 def save_transaction(result):
@@ -257,11 +332,20 @@ def save_transaction(result):
             failed_txn_count_24h,
             geo_distance_from_last_txn,
             amount_deviation_from_user_mean,
-            post_auth_risk_score
+            post_auth_risk_score,
+            account_age_days,
+            security_tier,
+            ip_address,
+            geo_location,
+            device_name,
+            device_identifier,
+            device_trust_status,
+            forensic_summary
         )
         VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
     """, (
         str(result.get("transaction_id")),
@@ -284,14 +368,22 @@ def save_transaction(result):
         int(result.get("failed_txn_count_24h") or 0),
         float(result.get("geo_distance_from_last_txn") or 0),
         float(result.get("amount_deviation_from_user_mean") or 0),
-        float(result.get("post_auth_risk_score") or 0)
+        float(result.get("post_auth_risk_score") or 0),
+        int(result.get("account_age_days") or 365),
+        result.get("security_tier", "TIER_1_SAFE"),
+        result.get("ip_address", "103.48.19.112"),
+        result.get("geo_location", "Nashik, MH, IN"),
+        result.get("device_name", "Registered Mobile Device"),
+        result.get("device_identifier", "DEV-DEFAULT"),
+        result.get("device_trust_status", "Trusted Device ✅"),
+        result.get("forensic_summary", "Standard transaction telemetry within normal bounds.")
     ))
     conn.commit()
     conn.close()
 
 
 # ============================================================
-# TRANSACTION LIST & FAST STATS
+# TRANSACTION LIST & DASHBOARD STATS
 # ============================================================
 
 def get_transactions(filter_type="all"):
@@ -309,10 +401,18 @@ def get_transactions(filter_type="all"):
             WHERE transaction_status LIKE 'Hold & Verify%'
             ORDER BY created_at DESC
         """).fetchall()
+    elif filter_type == "blocked":
+        rows = conn.execute("""
+            SELECT * FROM transactions
+            WHERE transaction_status LIKE 'Auto-Blocked%'
+               OR transaction_status LIKE 'Rejected%'
+            ORDER BY created_at DESC
+        """).fetchall()
     elif filter_type == "high":
         rows = conn.execute("""
             SELECT * FROM transactions
-            WHERE risk_level = 'High'
+            WHERE risk_level IN ('High', 'Critical')
+              AND transaction_status NOT LIKE 'Approved%'
             ORDER BY created_at DESC
         """).fetchall()
     else:
@@ -332,8 +432,8 @@ def get_dashboard_stats():
             COUNT(*) AS total_count,
             SUM(CASE WHEN transaction_status LIKE 'Approved%' THEN 1 ELSE 0 END) AS approved_count,
             SUM(CASE WHEN transaction_status LIKE 'Hold & Verify%' THEN 1 ELSE 0 END) AS hold_count,
-            SUM(CASE WHEN risk_level = 'High' AND transaction_status NOT LIKE 'Approved%' THEN 1 ELSE 0 END) AS high_count,
-            SUM(CASE WHEN transaction_status LIKE 'Rejected%' THEN 1 ELSE 0 END) AS rejected_count
+            SUM(CASE WHEN risk_level IN ('High', 'Critical') AND transaction_status NOT LIKE 'Approved%' THEN 1 ELSE 0 END) AS high_count,
+            SUM(CASE WHEN transaction_status LIKE 'Rejected%' OR transaction_status LIKE 'Auto-Blocked%' THEN 1 ELSE 0 END) AS rejected_count
         FROM transactions
     """).fetchone()
     conn.close()
@@ -369,14 +469,22 @@ def get_customer_transactions(customer_id, limit=20):
     return [dict(row) for row in rows]
 
 
+def clear_all_transactions():
+    conn = get_connection()
+    conn.execute("DELETE FROM verification_events")
+    conn.execute("DELETE FROM transactions")
+    conn.commit()
+    conn.close()
+
+
 # ============================================================
-# VERIFICATION WORKFLOW
+# STEP-UP VERIFICATION & BIOMETRIC DEVICE BINDING WORKFLOW
 # ============================================================
 
 def save_verification_event(
     transaction_id,
     customer_id,
-    verification_method,
+    verification_method="BIOMETRIC_FACE_SCAN",
     verification_status="PENDING"
 ):
     conn = get_connection()
@@ -432,39 +540,95 @@ def update_verification_status(verification_id, transaction_id, new_status):
     conn = get_connection()
     try:
         txn = conn.execute(
-            "SELECT transaction_status FROM transactions WHERE transaction_id = ?",
+            "SELECT * FROM transactions WHERE transaction_id = ?",
             (str(transaction_id),)
         ).fetchone()
         if txn is None or not str(txn["transaction_status"] or "").startswith("Hold & Verify"):
             return False
 
-        cursor = conn.execute("""
-            UPDATE verification_events
-            SET verification_status = ?, verified_at = ?
-            WHERE verification_id = ?
-              AND transaction_id = ?
-              AND verification_status = 'PENDING'
-        """, (
-            new_status,
-            datetime.now().isoformat(timespec="seconds"),
-            int(verification_id),
-            str(transaction_id)
-        ))
+        if verification_id:
+            cursor = conn.execute("""
+                UPDATE verification_events
+                SET verification_status = ?, verified_at = ?
+                WHERE verification_id = ?
+                  AND transaction_id = ?
+                  AND verification_status = 'PENDING'
+            """, (
+                new_status,
+                datetime.now().isoformat(timespec="seconds"),
+                int(verification_id),
+                str(transaction_id)
+            ))
+        else:
+            cursor = conn.execute("""
+                UPDATE verification_events
+                SET verification_status = ?, verified_at = ?
+                WHERE transaction_id = ?
+                  AND verification_status = 'PENDING'
+            """, (
+                new_status,
+                datetime.now().isoformat(timespec="seconds"),
+                str(transaction_id)
+            ))
 
         if cursor.rowcount == 0:
-            return False
+            # Create and immediately resolve if no pending row existed
+            conn.execute("""
+                INSERT INTO verification_events (
+                    transaction_id, customer_id, verification_method, verification_status, verified_at
+                )
+                VALUES (?, ?, 'BIOMETRIC_FACE_SCAN', ?, ?)
+            """, (
+                str(transaction_id),
+                str(txn["customer_id"]),
+                new_status,
+                datetime.now().isoformat(timespec="seconds")
+            ))
 
         if new_status == "APPROVED":
             txn_status = "Approved (Biometric Verified) ✅"
             new_risk = "Verified"
-        else:
-            txn_status = "Rejected (Blocked) ❌"
-            new_risk = "High"
+            new_trust = "Trusted (Biometric Bound) ✅"
+            new_tier = "TIER_2_VERIFIED"
 
-        conn.execute(
-            "UPDATE transactions SET transaction_status = ?, risk_level = ? WHERE transaction_id = ?",
-            (txn_status, new_risk, str(transaction_id))
-        )
+            # AUTO-TRUST NEW DEVICE ON BIOMETRIC APPROVAL
+            customer_id = str(txn["customer_id"] or "11453")
+            dev_id = str(txn["device_identifier"] or f"DEV-{customer_id}-NEW")
+            dev_name = str(txn["device_name"] or "Biometric Verified Mobile")
+            dev_type = str(txn["device_type"] or "mobile")
+
+            conn.execute("""
+                INSERT OR IGNORE INTO registered_devices (
+                    customer_id, device_identifier, device_model, device_type, is_active, registered_at
+                )
+                VALUES (?, ?, ?, ?, 1, ?)
+            """, (
+                customer_id,
+                dev_id,
+                dev_name,
+                dev_type,
+                datetime.now().isoformat(timespec="seconds")
+            ))
+        else:
+            txn_status = "Rejected (Biometric Failed) ❌"
+            new_risk = "High"
+            new_trust = "Untrusted / Blocked Device 🛑"
+            new_tier = "TIER_3_CRITICAL_BLOCK"
+
+        conn.execute("""
+            UPDATE transactions
+            SET transaction_status = ?,
+                risk_level = ?,
+                device_trust_status = ?,
+                security_tier = ?
+            WHERE transaction_id = ?
+        """, (
+            txn_status,
+            new_risk,
+            new_trust,
+            new_tier,
+            str(transaction_id)
+        ))
         conn.commit()
         return True
     finally:

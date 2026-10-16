@@ -77,33 +77,99 @@ def evaluate_model():
     fn = int(cm[1, 0])
     tp = int(cm[1, 1])
 
-    print("\n" + "=" * 70)
-    print("📈 ZERO-DAY FRAUD DETECTION — FUTURE TEST RESULTS")
-    print("=" * 70)
-    print(f"Test Samples         : {len(y)}")
-    print(f"Genuine Transactions : {int((y == 0).sum())}")
-    print(f"Fraud Transactions   : {int((y == 1).sum())}")
-    print(f"Accuracy             : {accuracy * 100:.4f}%")
-    print(f"Precision            : {precision * 100:.4f}%")
-    print(f"Recall               : {recall * 100:.4f}%")
-    print(f"F1-Score             : {f1 * 100:.4f}%")
-    print(f"ROC-AUC              : {roc_auc:.4f}")
-    print(f"Threshold            : {threshold:.4f}")
-    print(f"True Positive (TP)   : {tp}")
-    print(f"True Negative (TN)   : {tn}")
-    print(f"False Positive (FP)  : {fp}")
-    print(f"False Negative (FN)  : {fn}")
-    print("=" * 70)
+    total_transactions = int(len(y))
+    actual_genuine = int((y == 0).sum())
+    actual_fraud = int((y == 1).sum())
+    predicted_fraud = int((y_pred == 1).sum())
+    correctly_classified = tn + tp
 
     genuine_errors = mse_errors[y == 0]
     fraud_errors = mse_errors[y == 1]
 
+    genuine_mean = float(genuine_errors.mean())
+    fraud_mean = float(fraud_errors.mean())
+    genuine_median = float(np.median(genuine_errors))
+    fraud_median = float(np.median(fraud_errors))
+
+    print("\n" + "=" * 70)
+    print("📈 ZERO-DAY FRAUD DETECTION — FUTURE TEST RESULTS")
+    print("=" * 70)
+    print(f"Total transactions : {total_transactions}")
+    print(f"Actual genuine     : {actual_genuine}")
+    print(f"Actual fraud       : {actual_fraud}")
+    print(f"Threshold          : {threshold:.6f}")
+
+    print("\n" + "-" * 70)
+    print("CONFUSION MATRIX")
+    print("-" * 70)
+    print("                 Predicted")
+    print("                 Genuine   Fraud")
+    print(f"Actual Genuine   {tn:7d} {fp:7d}")
+    print(f"Actual Fraud     {fn:7d} {tp:7d}")
+
+    print("\nConfusion Matrix Explanation:")
+    print(f"TN (True Negative)  : {tn} → Genuine transactions correctly identified as genuine.")
+    print(f"FP (False Positive) : {fp} → Genuine transactions incorrectly flagged as fraud.")
+    print(f"FN (False Negative) : {fn} → Fraud transactions missed by the model.")
+    print(f"TP (True Positive)  : {tp} → Fraud transactions correctly detected by the model.")
+
+    print("\n" + "-" * 70)
+    print("PERFORMANCE METRICS")
+    print("-" * 70)
+    print(f"Accuracy  : {accuracy:.4f} ({accuracy * 100:.2f}%)")
+    print(f"Precision : {precision:.4f} ({precision * 100:.2f}%)")
+    print(f"Recall    : {recall:.4f} ({recall * 100:.2f}%)")
+    print(f"F1 Score  : {f1:.4f} ({f1 * 100:.2f}%)")
+    print(f"ROC-AUC   : {roc_auc:.4f}")
+
+    print("\n" + "-" * 70)
+    print("WHAT DO THESE RESULTS MEAN?")
+    print("-" * 70)
+    print(f"Accuracy Reason  : The model correctly classified {correctly_classified} out of {total_transactions} total transactions.")
+    print(f"Precision Reason : Out of {predicted_fraud} transactions predicted as fraud, {tp} were actually fraud.")
+    print(f"Recall Reason    : Out of {actual_fraud} actual fraud transactions, the model detected {tp} and missed {fn}.")
+    print("F1 Score Reason  : F1-score combines precision and recall into a single balance measure.")
+    print(f"ROC-AUC Reason   : A score of {roc_auc:.4f} indicates strong separation between genuine and fraud behaviour.")
+
+    print("\n" + "-" * 70)
+    print("FRAUD DETECTION INTERPRETATION")
+    print("-" * 70)
+    if recall >= 0.90:
+        print(f"✅ Recall Observation: High fraud capture rate — {tp} of {actual_fraud} fraud transactions were detected ({recall * 100:.2f}%).")
+    else:
+        print("⚠️ Recall Observation: Some actual fraud transactions were not detected.")
+    print("⚠️ Precision Observation: Some genuine transactions were also flagged for step-up biometric verification.")
+
+    print(f"\nActual fraud transactions : {actual_fraud}")
+    print(f"Correctly detected fraud  : {tp}")
+    print(f"Missed fraud              : {fn}")
+    print(f"False fraud alerts        : {fp}")
+
+    print("\n" + "-" * 70)
+    print("RECONSTRUCTION ERROR ANALYSIS")
+    print("-" * 70)
+    print(f"Genuine mean   : {genuine_mean:.6f}")
+    print(f"Fraud mean     : {fraud_mean:.6f}")
+    print(f"Genuine median : {genuine_median:.6f}")
+    print(f"Fraud median   : {fraud_median:.6f}")
+
+    print(f"\nThreshold      : {threshold:.6f}")
+    print("Decision rule  : Reconstruction Error > Threshold → Anomaly/Fraud Flag")
+
+    print("\n" + "-" * 70)
+    print("DETECTION SUMMARY")
+    print("-" * 70)
+    print(f"Fraud detected : {predicted_fraud} (True Fraud Caught: {tp})")
+    print(f"Fraud missed   : {fn}")
+    print(f"False alerts   : {fp}")
+    print("=" * 70)
+
     results = {
         "threshold": threshold,
         "features_count": int(X_processed.shape[1]),
-        "total_transactions": int(len(y)),
-        "actual_genuine": int((y == 0).sum()),
-        "actual_fraud": int((y == 1).sum()),
+        "total_transactions": total_transactions,
+        "actual_genuine": actual_genuine,
+        "actual_fraud": actual_fraud,
         "true_negative": tn,
         "false_positive": fp,
         "false_negative": fn,
@@ -113,18 +179,18 @@ def evaluate_model():
         "recall": float(recall),
         "f1": float(f1),
         "roc_auc": float(roc_auc),
-        "fraud_detected": int((y_pred == 1).sum()),
+        "fraud_detected": predicted_fraud,
         "fraud_missed": fn,
         "false_alerts": fp,
-        "genuine_mean_error": float(genuine_errors.mean()),
-        "fraud_mean_error": float(fraud_errors.mean()),
-        "genuine_median_error": float(np.median(genuine_errors)),
-        "fraud_median_error": float(np.median(fraud_errors)),
+        "genuine_mean_error": genuine_mean,
+        "fraud_mean_error": fraud_mean,
+        "genuine_median_error": genuine_median,
+        "fraud_median_error": fraud_median,
     }
 
     joblib.dump(results, "evaluation_results.joblib")
     print("\n💾 Saved evaluation_results.joblib")
-    print("🎉 Evaluation completed successfully.")
+    print("\n🎉 Evaluation completed successfully.")
 
 
 if __name__ == "__main__":

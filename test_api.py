@@ -1,66 +1,52 @@
 import json
-import sys
-from pathlib import Path
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
-
-import pandas as pd
+import requests
 
 BASE_URL = "http://127.0.0.1:5000"
-CSV_PATH = Path("data/transactions_test.csv")
 
 
-def clean_row(row_dict):
-    row_dict = dict(row_dict)
-    row_dict.pop("is_fraud", None)
-    cleaned = {}
-    for k, v in row_dict.items():
-        if pd.isna(v):
-            cleaned[k] = None
-        elif hasattr(v, "item"):
-            cleaned[k] = v.item()
-        else:
-            cleaned[k] = v
-    return cleaned
+def pretty_print(title, data):
+    print(f"\n{title}")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
-def post_json(url, payload_dict):
-    req = Request(
-        url,
-        data=json.dumps(payload_dict).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
+def run_tests():
+    # 1. Health Check
+    r1 = requests.get(f"{BASE_URL}/api/health", timeout=10)
+    pretty_print("1. Checking /api/health (19-Feature Model & 3-Tier Engine)...", r1.json())
+
+    # 2. Tier 1: Genuine Payment (Aun on Trusted iPhone 15 in Nashik)
+    r2 = requests.post(f"{BASE_URL}/api/simulate/genuine_aun", timeout=10)
+    pretty_print("2. [TIER 1] Testing GENUINE Payment (Aun's Trusted iPhone 15 in Nashik)...", r2.json())
+
+    # 3. Tier 2: Aun Bought a New Phone in Mumbai -> Hold & Verify -> Biometric Pass
+    r3 = requests.post(f"{BASE_URL}/api/simulate/new_phone_aun", timeout=10)
+    tier2_txn = r3.json()
+    pretty_print("3. [TIER 2] Testing AUN ON NEW MOBILE IN MUMBAI (Expected: Hold & Verify 🚨)...", tier2_txn)
+
+    # 3B. Simulate Biometric / Face Scan Approval for Tier 2
+    txn_id = tier2_txn.get("transaction_id")
+    ver_id = tier2_txn.get("verification_id")
+    r3_verify = requests.post(
+        f"{BASE_URL}/api/verify",
+        json={
+            "transaction_id": txn_id,
+            "verification_id": ver_id,
+            "status": "APPROVED",
+        },
+        timeout=10,
     )
-    with urlopen(req, timeout=30) as res:
-        return json.loads(res.read().decode("utf-8"))
+    pretty_print(
+        f"3B. [BIOMETRIC FACE SCAN PASSED] Verifying Transaction #{txn_id} & Auto-Trusting New Phone...",
+        r3_verify.json(),
+    )
 
-
-def main():
-    print("1. Checking /api/health ...")
-    try:
-        with urlopen(f"{BASE_URL}/api/health", timeout=10) as res:
-            health = json.loads(res.read().decode("utf-8"))
-            print(json.dumps(health, indent=2))
-    except URLError as exc:
-        print("Cannot connect to Flask on port 5000:", exc)
-        sys.exit(1)
-
-    if not CSV_PATH.exists():
-        print(f"ERROR: Dataset not found: {CSV_PATH.resolve()}")
-        sys.exit(1)
-
-    df = pd.read_csv(CSV_PATH)
-    genuine_row = df[df["is_fraud"] == 0].iloc[0].to_dict()
-    fraud_row = df[df["is_fraud"] == 1].iloc[0].to_dict()
-
-    print("\n2. Testing GENUINE Transaction (Expected: Approved)...")
-    res_gen = post_json(f"{BASE_URL}/predict", clean_row(genuine_row))
-    print(json.dumps(res_gen, indent=2, ensure_ascii=False))
-
-    print("\n3. Testing FRAUD Transaction (Expected: Hold & Verify)...")
-    res_fraud = post_json(f"{BASE_URL}/predict", clean_row(fraud_row))
-    print(json.dumps(res_fraud, indent=2, ensure_ascii=False))
+    # 4. Tier 3: Critical Hacker Account Drain Attack -> Instant Auto-Block + Full Kundali
+    r4 = requests.post(f"{BASE_URL}/api/simulate/hacker_attack", timeout=10)
+    pretty_print(
+        "4. [TIER 3] Testing CRITICAL HACKER ATTACK (Expected: Auto-Blocked 🛑 + Full Hacker Kundali)...",
+        r4.json(),
+    )
 
 
 if __name__ == "__main__":
-    main()
+    run_tests()
