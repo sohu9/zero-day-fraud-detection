@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FraudGuard AI — Zero-Day Fraud Detection Command Center</title>
+    <title>ZeroDay — Fraud Detection & Risk Operations Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
-            --bg-main: #0b1120;
-            --bg-panel: #111827;
-            --bg-card: #161f33;
-            --bg-input: #0f172a;
-            --border: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --green: #10b981;
-            --amber: #f59e0b;
-            --red: #ef4444;
-            --purple: #8b5cf6;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
         }
 
         * {
@@ -29,546 +38,707 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-            background: var(--bg-main);
-            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
             display: flex;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* SIDEBAR */
+        /* SIDEBAR (Deep Navy from Reference Design) */
         .sidebar {
             width: 250px;
-            background: #090e1a;
-            border-right: 1px solid var(--border);
+            background-color: var(--sidebar-bg);
+            color: #ffffff;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px 14px;
             position: fixed;
             height: 100vh;
             left: 0;
             top: 0;
-            z-index: 20;
+            z-index: 30;
+            padding: 22px 16px;
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 6px 10px 20px;
-            border-bottom: 1px solid var(--border);
+            padding: 4px 10px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .brand-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #2563eb, #4f46e5);
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
         }
 
-        .brand-title {
-            font-size: 16px;
-            font-weight: 700;
+        .brand-text {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
         }
 
-        .brand-sub {
-            font-size: 11px;
-            color: var(--text-muted);
+        .nav-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
-        .nav-section-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin: 18px 10px 8px;
-        }
-
-        .nav-btn {
+        .nav-item {
             width: 100%;
             background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-muted);
-            padding: 11px 12px;
+            border: none;
+            color: #94a3b8;
+            padding: 11px 14px;
             border-radius: 10px;
-            cursor: pointer;
+            font-size: 13.5px;
+            font-weight: 500;
+            font-family: inherit;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-align: left;
+        }
+
+        .nav-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-item:hover {
+            background-color: var(--sidebar-hover);
+            color: #f8fafc;
+        }
+
+        .nav-item.active {
+            background-color: var(--primary);
+            color: #ffffff;
             font-weight: 600;
-            margin-bottom: 6px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .nav-badge {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .sidebar-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 16px;
+        }
+
+        .model-status-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 11.5px;
+        }
+
+        .model-status-row {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .model-status-row strong {
+            color: #f8fafc;
+        }
+
+        .logout-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            padding: 10px 14px;
+            border-radius: 10px;
             transition: all 0.2s;
         }
 
-        .nav-btn:hover, .nav-btn.active {
-            background: rgba(59, 130, 246, 0.12);
-            border-color: rgba(59, 130, 246, 0.35);
-            color: var(--text-main);
+        .logout-link:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
         }
 
-        .nav-pill {
-            font-size: 10px;
-            padding: 2px 7px;
-            border-radius: 6px;
-            background: rgba(59, 130, 246, 0.2);
-            color: #93c5fd;
-        }
-
-        .sidebar-footer {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 11px;
-        }
-
-        .sidebar-footer-title {
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #e2e8f0;
-        }
-
-        .footer-row {
-            display: flex;
-            justify-content: space-between;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        /* MAIN AREA */
-        .main-content {
+        /* MAIN WRAPPER */
+        .main-wrapper {
             margin-left: 250px;
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
+        /* TOPBAR */
         .topbar {
-            padding: 16px 28px;
+            background: var(--surface);
             border-bottom: 1px solid var(--border);
-            background: rgba(15, 23, 42, 0.85);
+            padding: 16px 32px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 10;
-            backdrop-filter: blur(8px);
+            z-index: 20;
         }
 
-        .topbar-title {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .topbar-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .topbar-right {
+        .user-greeting {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .pill-badge {
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .greeting-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .greeting-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 6px 12px;
-            border-radius: 999px;
+            border-radius: 99px;
             font-size: 12px;
             font-weight: 600;
+            background: var(--success-bg);
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .threshold-chip {
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #334155;
             border: 1px solid var(--border);
-            background: var(--bg-panel);
         }
 
-        .pill-live {
-            border-color: rgba(16, 185, 129, 0.4);
-            background: rgba(16, 185, 129, 0.12);
-            color: #34d399;
+        /* CONTENT AREA */
+        .content-area {
+            padding: 28px 32px;
         }
 
-        .logout-btn {
-            padding: 6px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            background: rgba(239, 68, 68, 0.12);
-            color: #f87171;
-            text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .page-container {
-            padding: 24px 28px;
-        }
-
-        .tab-panel {
+        .tab-view {
             display: none;
         }
 
-        .tab-panel.active {
+        .tab-view.active {
             display: block;
         }
 
-        /* KPI CARDS */
-        .kpi-grid {
+        /* 4 KPI CARDS (Screen 2 Style) */
+        .kpi-row {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 14px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 22px;
         }
 
         .kpi-card {
-            background: var(--bg-panel);
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 16px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        .kpi-card:hover, .kpi-card.active-filter {
-            border-color: var(--accent);
+        .kpi-card:hover, .kpi-card.active-card {
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
             transform: translateY(-2px);
         }
 
-        .kpi-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            font-weight: 700;
+        .kpi-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .kpi-value {
+        .kpi-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kpi-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .kpi-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .kpi-number {
             font-size: 28px;
             font-weight: 800;
-            margin: 8px 0 4px;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
         }
 
-        .kpi-sub {
-            font-size: 11px;
-            color: var(--text-muted);
+        .kpi-trend {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* VIVA 3-TIER SIMULATION BAR */
-        .sim-bar {
-            background: linear-gradient(90deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+        /* QUICK SCENARIO BAR */
+        .scenario-banner {
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 14px 18px;
-            margin-bottom: 20px;
+            padding: 16px 20px;
+            margin-bottom: 22px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 14px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
         }
 
-        .sim-bar-title {
-            font-size: 13px;
+        .scenario-info h4 {
+            font-size: 14px;
             font-weight: 700;
-            color: #e2e8f0;
+            color: var(--text-primary);
         }
 
-        .sim-bar-sub {
-            font-size: 11px;
-            color: var(--text-muted);
+        .scenario-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
-        .sim-buttons {
+        .btn-group {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 9px 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 15px;
             border-radius: 9px;
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 600;
-            border: 1px solid var(--border);
+            font-family: inherit;
             cursor: pointer;
-            background: var(--bg-card);
-            color: var(--text-main);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-primary);
             transition: all 0.15s;
         }
 
+        .btn svg {
+            width: 15px;
+            height: 15px;
+        }
+
         .btn:hover {
-            filter: brightness(1.15);
-        }
-
-        .btn-tier1 {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.45);
-            color: #34d399;
-        }
-
-        .btn-tier2 {
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.45);
-            color: #fbbf24;
-        }
-
-        .btn-tier3 {
-            background: rgba(239, 68, 68, 0.18);
-            border-color: rgba(239, 68, 68, 0.5);
-            color: #f87171;
+            background: #f1f5f9;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #2563eb, #4f46e5);
-            border-color: transparent;
-            color: #fff;
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
         }
 
-        /* ALERTS LIST */
-        .section-box {
-            background: var(--bg-panel);
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-outline-green {
+            background: var(--success-bg);
+            color: #047857;
+            border-color: #a7f3d0;
+        }
+
+        .btn-outline-amber {
+            background: var(--warning-bg);
+            color: #b45309;
+            border-color: #fde68a;
+        }
+
+        .btn-outline-red {
+            background: var(--danger-bg);
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        /* CHARTS ROW (Screen 2) */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.65fr 1fr;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .card-panel {
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 20px 22px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
         }
 
-        .section-header {
+        .card-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
         }
 
-        .txn-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--green);
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 14px;
-        }
-
-        .txn-card.tier-hold {
-            border-left-color: var(--amber);
-        }
-
-        .txn-card.tier-blocked {
-            border-left-color: var(--red);
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.07), var(--bg-card));
-        }
-
-        .txn-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .txn-title {
-            font-size: 16px;
+        .card-title {
+            font-size: 15px;
             font-weight: 700;
+            color: var(--text-primary);
         }
 
-        .txn-time {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            display: inline-block;
-            margin-left: 6px;
-        }
-
-        .badge-approved {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.35);
-        }
-
-        .badge-hold {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
-
-        .badge-blocked {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.45);
-        }
-
-        .txn-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .mini-box {
-            background: rgba(15, 23, 42, 0.65);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        .mini-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .mini-val {
-            font-size: 14px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-
-        /* HACKER FORENSIC TELEMETRY STRIP */
-        .forensic-strip {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(59, 130, 246, 0.28);
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 10px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+        .card-sub {
             font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
-        .forensic-item strong {
-            display: block;
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 2px;
+        /* CLEAN ENTERPRISE TABLE (Screens 7 & 8) */
+        .table-wrapper {
+            overflow-x: auto;
         }
 
-        .xai-box {
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 12px;
-            color: #cbd5e1;
-            margin-bottom: 12px;
-        }
-
-        .xai-title {
-            color: #38bdf8;
-            font-weight: 700;
-            margin-bottom: 4px;
-            font-size: 11px;
-        }
-
-        .txn-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        /* FORMS */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-            margin-top: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .form-group input, .form-group select {
+        table.enterprise-table {
             width: 100%;
-            padding: 9px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg-input);
-            color: var(--text-main);
+            border-collapse: collapse;
             font-size: 13px;
         }
 
-        /* MODAL */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.78);
-            display: none;
+        table.enterprise-table th {
+            text-align: left;
+            padding: 12px 14px;
+            background: #f8fafc;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.enterprise-table td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        table.enterprise-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        .status-pill {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            z-index: 50;
-            padding: 20px;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 600;
         }
 
-        .modal-overlay.open {
-            display: flex;
+        .pill-approved {
+            background: var(--success-bg);
+            color: #047857;
         }
 
-        .modal-box {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            max-width: 860px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 24px;
+        .pill-review {
+            background: var(--warning-bg);
+            color: #b45309;
         }
 
-        .investigation-grid {
+        .pill-blocked {
+            background: var(--danger-bg);
+            color: #b91c1c;
+        }
+
+        .risk-score-high {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .risk-score-low {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* SCREEN 3: NEW TRANSACTION + TIPS SIDEBAR */
+        .new-txn-layout {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 14px 0;
+            grid-template-columns: 1.8fr 1fr;
+            gap: 20px;
+            align-items: start;
         }
 
-        .biometric-scanner-box {
-            border: 1px dashed #fbbf24;
-            background: rgba(245, 158, 11, 0.08);
-            border-radius: 12px;
-            padding: 16px;
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #f8fafc;
+            font-size: 13.5px;
+            font-family: inherit;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .form-field input:focus, .form-field select:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .tips-list {
+            list-style: none;
             margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tips-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.45;
+        }
+
+        .priority-shield-box {
+            margin-top: 24px;
+            padding: 24px 16px;
+            background: var(--primary-light);
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
             text-align: center;
         }
 
+        /* MODAL (Screens 4, 5 & 6: Transaction Result / Fraud Alert / Biometric Verification) */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            padding: 20px;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
+            padding: 28px;
+        }
+
+        .modal-split {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 20px;
+            margin-top: 18px;
+        }
+
+        .alert-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 18px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+
+        .banner-approved {
+            background: var(--success-bg);
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .banner-review {
+            background: var(--warning-bg);
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .banner-blocked {
+            background: var(--danger-bg);
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .detail-pairs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .pair-label {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .pair-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .why-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .fingerprint-circle {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            border: 2px solid #93c5fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 12px auto;
+            color: var(--primary);
+        }
+
         video#webcam-preview {
-            width: 220px;
+            width: 100%;
+            max-width: 240px;
             height: 165px;
             border-radius: 10px;
-            border: 2px solid #38bdf8;
+            border: 2px solid var(--primary);
             object-fit: cover;
             display: none;
             margin: 10px auto;
         }
 
-        .toast {
+        .toast-notification {
             position: fixed;
-            bottom: 22px;
-            right: 22px;
-            background: #1e293b;
-            border: 1px solid var(--accent);
-            color: #fff;
+            bottom: 24px;
+            right: 24px;
+            background: var(--sidebar-bg);
+            color: #ffffff;
             padding: 12px 18px;
             border-radius: 10px;
             font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
             display: none;
             z-index: 100;
         }
@@ -576,203 +746,418 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
         <div>
             <div class="brand">
-                <div class="brand-icon">🛡️</div>
-                <div>
-                    <div class="brand-title">FraudGuard AI</div>
-                    <div class="brand-sub">3-Tier Zero-Day SOC Suite</div>
+                <div class="brand-logo">
+                    <i data-lucide="shield-check" style="color: #fff; width: 20px; height: 20px;"></i>
                 </div>
+                <span class="brand-text">ZeroDay</span>
             </div>
 
-            <div class="nav-section-label">Core Modules</div>
-            <button class="nav-btn active" onclick="switchTab('dashboard', this)">
-                <span>📊 Command Dashboard</span>
-                <span class="nav-pill">LIVE</span>
-            </button>
-            <button class="nav-btn" onclick="switchTab('manual', this)">
-                <span>🧪 Manual &amp; Scenario Test</span>
-                <span class="nav-pill">3-TIER</span>
-            </button>
-            <button class="nav-btn" onclick="switchTab('upload', this)">
-                <span>📁 Data Ingestion</span>
-                <span class="nav-pill">CSV</span>
-            </button>
-            <button class="nav-btn" onclick="switchTab('metrics', this)">
-                <span>📈 Evaluation Metrics</span>
-                <span class="nav-pill">98.95%</span>
-            </button>
+            <div class="nav-list">
+                <button class="nav-item active" onclick="switchView('dashboard', this)">
+                    <span class="nav-item-left"><i data-lucide="layout-dashboard"></i> Dashboard</span>
+                </button>
+                <button class="nav-item" onclick="switchView('new-txn', this)">
+                    <span class="nav-item-left"><i data-lucide="plus-circle"></i> New Transaction</span>
+                </button>
+                <button class="nav-item" onclick="switchView('queue', this)">
+                    <span class="nav-item-left"><i data-lucide="shield-alert"></i> Verification Queue</span>
+                    <span class="nav-badge" id="nav-hold-badge">0</span>
+                </button>
+                <button class="nav-item" onclick="switchView('devices', this)">
+                    <span class="nav-item-left"><i data-lucide="smartphone"></i> Device Management</span>
+                </button>
+                <button class="nav-item" onclick="switchView('batch', this)">
+                    <span class="nav-item-left"><i data-lucide="folder-up"></i> Batch CSV Upload</span>
+                </button>
+                <button class="nav-item" onclick="switchView('benchmark', this)">
+                    <span class="nav-item-left"><i data-lucide="bar-chart-3"></i> Model Benchmark</span>
+                </button>
+            </div>
         </div>
 
-        <div class="sidebar-footer">
-            <div class="sidebar-footer-title">🧠 Active Model Artifact</div>
-            <div class="footer-row"><span>Engine:</span><span>19→14→7→14→19 AE</span></div>
-            <div class="footer-row"><span>Threshold:</span><span>1.0347 MSE</span></div>
-            <div class="footer-row"><span>Features:</span><span>19 Behavioral</span></div>
-            <div class="footer-row"><span>ROC-AUC:</span><span>0.9980</span></div>
+        <div class="sidebar-bottom">
+            <div class="model-status-box">
+                <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">Autoencoder Engine</div>
+                <div class="model-status-row"><span>Architecture</span><strong>19→14→7→14→19</strong></div>
+                <div class="model-status-row"><span>Threshold</span><strong>1.0347 MSE</strong></div>
+                <div class="model-status-row"><span>Test Recall</span><strong>95.92%</strong></div>
+            </div>
+            <a href="/logout" class="logout-link">
+                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+                <span>Logout</span>
+            </a>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <div class="main-content">
+    <div class="main-wrapper">
+        <!-- TOPBAR -->
         <header class="topbar">
-            <div>
-                <div class="topbar-title">Zero-Day Fraud Detection Command Center</div>
-                <div class="topbar-sub">3-Tier Adaptive Risk Engine • Autoencoder Anomaly Scoring • Biometric Device Binding • Attacker Telemetry</div>
+            <div class="user-greeting">
+                <div class="avatar-circle">MA</div>
+                <div>
+                    <div class="greeting-title">Hello, Mohammad Aun</div>
+                    <div class="greeting-sub">Account #11453 • Nashik, Maharashtra • 3-Tier Adaptive Risk Protection</div>
+                </div>
             </div>
-            <div class="topbar-right">
-                <span class="pill-badge">Threshold: 1.0347 • Features: 19</span>
-                <span class="pill-badge pill-live">● Live Connected</span>
-                <a href="/logout" class="logout-btn">Logout</a>
+            <div class="topbar-actions">
+                <span class="threshold-chip">Threshold: 1.0347 MSE • 19 Features</span>
+                <span class="status-chip"><span class="status-dot"></span> Real-Time Stream Active</span>
             </div>
         </header>
 
-        <div class="page-container">
+        <div class="content-area">
 
-            <!-- TAB 1: DASHBOARD -->
-            <div id="tab-dashboard" class="tab-panel active">
-                <div class="kpi-grid">
-                    <div class="kpi-card active-filter" onclick="loadTransactions('all', this)">
-                        <div class="kpi-label">Total Transactions</div>
-                        <div class="kpi-value" id="stat-all">0</div>
-                        <div class="kpi-sub">All evaluated events</div>
+            <!-- VIEW 1: DASHBOARD (Screen 2 & 7) -->
+            <div id="view-dashboard" class="tab-view active">
+                <div class="kpi-row">
+                    <div class="kpi-card active-card" onclick="loadTransactions('all', this)">
+                        <div class="kpi-top">
+                            <div class="kpi-icon" style="background: #eff6ff; color: #2563eb;"><i data-lucide="activity"></i></div>
+                            <span class="kpi-title">Total Transactions</span>
+                        </div>
+                        <div class="kpi-number" id="stat-all">0</div>
+                        <div class="kpi-trend" style="color: #10b981;">All evaluated transactions</div>
                     </div>
-                    <div class="kpi-card" onclick="loadTransactions('approved', this)">
-                        <div class="kpi-label">Tier 1 &amp; Verified</div>
-                        <div class="kpi-value" id="stat-approved" style="color: #34d399;">0</div>
-                        <div class="kpi-sub">Approved / Biometric Bound</div>
-                    </div>
+
                     <div class="kpi-card" onclick="loadTransactions('hold', this)">
-                        <div class="kpi-label">Tier 2: Hold &amp; Verify</div>
-                        <div class="kpi-value" id="stat-hold" style="color: #fbbf24;">0</div>
-                        <div class="kpi-sub">Awaiting Face / Biometric Scan</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon" style="background: #fffbeb; color: #d97706;"><i data-lucide="alert-triangle"></i></div>
+                            <span class="kpi-title">Flagged for Review</span>
+                        </div>
+                        <div class="kpi-number" id="stat-hold">0</div>
+                        <div class="kpi-trend" style="color: #d97706;">Tier 2: Awaiting Biometric Scan</div>
                     </div>
+
+                    <div class="kpi-card" onclick="loadTransactions('approved', this)">
+                        <div class="kpi-top">
+                            <div class="kpi-icon" style="background: #ecfdf5; color: #059669;"><i data-lucide="check-circle-2"></i></div>
+                            <span class="kpi-title">Approved &amp; Verified</span>
+                        </div>
+                        <div class="kpi-number" id="stat-approved">0</div>
+                        <div class="kpi-trend" style="color: #059669;">Tier 1 Safe &amp; Biometric Bound</div>
+                    </div>
+
                     <div class="kpi-card" onclick="loadTransactions('blocked', this)">
-                        <div class="kpi-label">Tier 3: Auto-Blocked</div>
-                        <div class="kpi-value" id="stat-rejected" style="color: #f87171;">0</div>
-                        <div class="kpi-sub">Hacker attacks intercepted</div>
-                    </div>
-                    <div class="kpi-card" onclick="loadTransactions('high', this)">
-                        <div class="kpi-label">Active High-Risk</div>
-                        <div class="kpi-value" id="stat-high" style="color: #c084fc;">0</div>
-                        <div class="kpi-sub">MSE &gt; 1.0347 threshold</div>
+                        <div class="kpi-top">
+                            <div class="kpi-icon" style="background: #fef2f2; color: #dc2626;"><i data-lucide="shield-off"></i></div>
+                            <span class="kpi-title">Fraudulent Attempts</span>
+                        </div>
+                        <div class="kpi-number" id="stat-rejected">0</div>
+                        <div class="kpi-trend" style="color: #dc2626;">Tier 3: Auto-Blocked Attacks</div>
                     </div>
                 </div>
 
-                <!-- 1-CLICK LIVE VIVA SIMULATION BAR -->
-                <div class="sim-bar">
-                    <div>
-                        <div class="sim-bar-title">⚡ 1-Click Live 3-Tier Scenario Simulator (Viva Demonstration)</div>
-                        <div class="sim-bar-sub">Test Genuine User vs. Aun on a New Phone in Mumbai vs. Remote Hacker Account Drain Attack</div>
+                <!-- LIVE SCENARIO TEST BAR -->
+                <div class="scenario-banner">
+                    <div class="scenario-info">
+                        <h4>Live 3-Tier Adaptive Risk Simulation</h4>
+                        <p>Trigger instant test scenarios to demonstrate Genuine Approval, New Device Biometric Hold, or Critical Hacker Block</p>
                     </div>
-                    <div class="sim-buttons">
-                        <button class="btn btn-tier1" onclick="triggerScenario('genuine_aun')">🟢 Tier 1: Aun's Trusted iPhone (Nashik)</button>
-                        <button class="btn btn-tier2" onclick="triggerScenario('new_phone_aun')">🟠 Tier 2: Aun Bought New Phone (Mumbai)</button>
-                        <button class="btn btn-tier3" onclick="triggerScenario('hacker_attack')">🔴 Tier 3: Hacker Attack (Auto-Block + Kundali)</button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-green" onclick="triggerScenario('genuine_aun')">
+                            <i data-lucide="check-circle"></i> Tier 1: Trusted iPhone (Nashik)
+                        </button>
+                        <button class="btn btn-outline-amber" onclick="triggerScenario('new_phone_aun')">
+                            <i data-lucide="smartphone"></i> Tier 2: New Phone in Mumbai (Biometric Hold)
+                        </button>
+                        <button class="btn btn-outline-red" onclick="triggerScenario('hacker_attack')">
+                            <i data-lucide="shield-alert"></i> Tier 3: Hacker Attack (Auto-Block)
+                        </button>
                     </div>
                 </div>
 
-                <div class="section-box">
-                    <div class="section-header">
+                <!-- CHARTS ROW (Screen 2) -->
+                <div class="charts-row">
+                    <div class="card-panel">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Transaction Overview (Reconstruction Error vs Threshold)</div>
+                                <div class="card-sub">Live Autoencoder MSE score across recent evaluated transactions (Threshold = 1.0347)</div>
+                            </div>
+                        </div>
+                        <div style="height: 230px;">
+                            <canvas id="mseLineChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card-panel">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Security Decision Breakdown</div>
+                                <div class="card-sub">Distribution across 3-Tier Risk Engine</div>
+                            </div>
+                        </div>
+                        <div style="height: 230px; display: flex; align-items: center; justify-content: center;">
+                            <canvas id="tierDoughnutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRANSACTION HISTORY TABLE (Screen 7) -->
+                <div class="card-panel">
+                    <div class="card-header">
                         <div>
-                            <h3 style="font-size: 16px;">Real-Time Transaction &amp; Forensic Telemetry Stream</h3>
-                            <p style="font-size: 12px; color: var(--text-muted);">Live feed with Attacker IP, Geo-Location, Device Fingerprint, and XAI Residuals</p>
+                            <div class="card-title">Transaction History &amp; Forensic Telemetry</div>
+                            <div class="card-sub">Click 'Inspect' on any transaction to open the Fraud Alert, Biometric Scanner, and Official Audit PDF</div>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn" onclick="loadTransactions('all')">🔄 Refresh</button>
-                            <button class="btn" onclick="clearTransactions()">🧹 Clear View</button>
+                        <div class="btn-group">
+                            <button class="btn" onclick="loadTransactions('all')"><i data-lucide="refresh-cw"></i> Refresh</button>
+                            <button class="btn" onclick="clearTransactions()"><i data-lucide="trash-2"></i> Clear History</button>
                         </div>
                     </div>
 
-                    <div id="transactions-container"></div>
+                    <div class="table-wrapper">
+                        <table class="enterprise-table">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Device &amp; Trust State</th>
+                                    <th>Origin Location &amp; IP</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Risk Score (MSE)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- TAB 2: MANUAL TESTING -->
-            <div id="tab-manual" class="tab-panel">
-                <div class="section-box">
-                    <div class="section-header">
-                        <div>
-                            <h3>Manual 19-Feature Behavioral &amp; Forensic Test Bench</h3>
-                            <p style="font-size: 12px; color: var(--text-muted);">Load a preset scenario or customize parameters to test the 3-Tier Adaptive Risk Engine</p>
+            <!-- VIEW 2: MAKE A NEW TRANSACTION (Screen 3) -->
+            <div id="view-new-txn" class="tab-view">
+                <div class="new-txn-layout">
+                    <div class="card-panel">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Make a New Transaction (19-Feature Behavioral Test)</div>
+                                <div class="card-sub">Enter custom transaction parameters or load a preset scenario below</div>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-green" onclick="fillPreset('genuine_aun')">Load Safe</button>
+                                <button type="button" class="btn btn-outline-amber" onclick="fillPreset('new_phone_aun')">Load New Phone</button>
+                                <button type="button" class="btn btn-outline-red" onclick="fillPreset('hacker_attack')">Load Hacker</button>
+                            </div>
                         </div>
-                        <div class="sim-buttons">
-                            <button class="btn btn-tier1" onclick="fillPreset('genuine_aun')">🟢 Load Genuine Preset</button>
-                            <button class="btn btn-tier2" onclick="fillPreset('new_phone_aun')">🟠 Load New Phone Preset</button>
-                            <button class="btn btn-tier3" onclick="fillPreset('hacker_attack')">🔴 Load Hacker Attack Preset</button>
-                        </div>
+
+                        <form id="manual-form" onsubmit="submitManualForm(event)">
+                            <div class="form-grid-2">
+                                <div class="form-field"><label>Amount (₹)</label><input type="number" step="0.01" name="transaction_amount" value="1783.56" required></div>
+                                <div class="form-field"><label>Payment Method</label>
+                                    <select name="payment_channel">
+                                        <option value="card">Card Payment</option>
+                                        <option value="UPI">UPI Instant</option>
+                                        <option value="netbanking">NetBanking</option>
+                                        <option value="wallet">Digital Wallet</option>
+                                    </select>
+                                </div>
+                                <div class="form-field"><label>Customer ID</label><input type="number" name="customer_id" value="11453" required></div>
+                                <div class="form-field"><label>Merchant / Payee ID</label><input type="number" name="merchant_id" value="7397" required></div>
+                                <div class="form-field"><label>Location</label><input type="text" name="geo_location" value="Nashik, Maharashtra, IN"></div>
+                                <div class="form-field"><label>Geo Distance from Last Txn (km)</label><input type="number" step="0.1" name="geo_distance_from_last_txn" value="4.2" required></div>
+                            </div>
+
+                            <h4 style="font-size: 13.5px; font-weight: 700; margin: 20px 0 12px; color: var(--text-primary); border-top: 1px solid var(--border); padding-top: 16px;">Device &amp; Network Telemetry</h4>
+                            <div class="form-grid-2">
+                                <div class="form-field"><label>Device Type</label>
+                                    <select name="device_type">
+                                        <option value="mobile">Mobile Device</option>
+                                        <option value="desktop">Desktop / Workstation</option>
+                                    </select>
+                                </div>
+                                <div class="form-field"><label>Device Name / Fingerprint</label><input type="text" name="device_name" value="Aun's Trusted iPhone 15 Pro (iOS 18.2)"></div>
+                                <div class="form-field"><label>Network IP Address</label><input type="text" name="ip_address" value="103.48.19.112 (JioFiber)"></div>
+                                <div class="form-field"><label>IP Risk Score (0.00 - 1.00)</label><input type="number" step="0.01" name="ip_risk_score" value="0.14" required></div>
+                                <div class="form-field"><label>Amount Deviation from User Mean (₹)</label><input type="number" step="0.01" name="amount_deviation_from_user_mean" value="180.0" required></div>
+                                <div class="form-field"><label>Failed Auth Attempts (24h)</label><input type="number" name="failed_txn_count_24h" value="0" required></div>
+                                <div class="form-field"><label>Transactions in Last 1 Hour</label><input type="number" name="txn_count_1h" value="1" required></div>
+                                <div class="form-field"><label>Transactions in Last 24 Hours</label><input type="number" name="txn_count_24h" value="2" required></div>
+                                <div class="form-field"><label>Account Age (Days)</label><input type="number" name="account_age_days" value="540" required></div>
+                                <div class="form-field"><label>International Routing (0 = Domestic, 1 = Intl)</label><input type="number" name="is_international" value="0" required></div>
+                                <input type="hidden" name="post_auth_risk_score" value="0.18">
+                            </div>
+
+                            <div style="margin-top: 22px;">
+                                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+                                    <i data-lucide="send"></i> Submit Transaction for Real-Time Scoring
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <form id="manual-form" onsubmit="submitManualForm(event)">
-                        <div class="form-grid">
-                            <div class="form-group"><label>Customer ID</label><input type="number" name="customer_id" value="11453" required></div>
-                            <div class="form-group"><label>Merchant ID</label><input type="number" name="merchant_id" value="7397" required></div>
-                            <div class="form-group"><label>Transaction Amount (₹)</label><input type="number" step="0.01" name="transaction_amount" value="1783.56" required></div>
-                            <div class="form-group"><label>Amount Deviation from Mean (₹)</label><input type="number" step="0.01" name="amount_deviation_from_user_mean" value="180.0" required></div>
-                            <div class="form-group"><label>Payment Channel</label>
-                                <select name="payment_channel">
-                                    <option value="card">card</option>
-                                    <option value="UPI">UPI</option>
-                                    <option value="netbanking">netbanking</option>
-                                    <option value="wallet">wallet</option>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Device Type</label>
-                                <select name="device_type">
-                                    <option value="mobile">mobile</option>
-                                    <option value="desktop">desktop</option>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Device Model / Fingerprint</label><input type="text" name="device_name" value="Aun's Trusted iPhone 15 Pro (iOS 18.2)"></div>
-                            <div class="form-group"><label>Geo Location</label><input type="text" name="geo_location" value="Nashik, Maharashtra, IN"></div>
-                            <div class="form-group"><label>IP Address</label><input type="text" name="ip_address" value="103.48.19.112 (JioFiber)"></div>
-                            <div class="form-group"><label>Geo Distance from Last Txn (km)</label><input type="number" step="0.1" name="geo_distance_from_last_txn" value="4.2" required></div>
-                            <div class="form-group"><label>IP Risk Score (0.0 - 1.0)</label><input type="number" step="0.01" name="ip_risk_score" value="0.14" required></div>
-                            <div class="form-group"><label>Failed Auth Attempts (24h)</label><input type="number" name="failed_txn_count_24h" value="0" required></div>
-                            <div class="form-group"><label>Txn Count (1h)</label><input type="number" name="txn_count_1h" value="1" required></div>
-                            <div class="form-group"><label>Txn Count (24h)</label><input type="number" name="txn_count_24h" value="2" required></div>
-                            <div class="form-group"><label>Account Age (Days)</label><input type="number" name="account_age_days" value="540" required></div>
-                            <div class="form-group"><label>International Routing (0 or 1)</label><input type="number" name="is_international" value="0" required></div>
-                            <div class="form-group"><label>Context Risk Score (0.0 - 1.0)</label><input type="number" step="0.01" name="post_auth_risk_score" value="0.18" required></div>
+                    <!-- RIGHT SIDEBAR: TRANSACTION TIPS (Screen 3) -->
+                    <div class="card-panel">
+                        <div class="card-title">Transaction Tips</div>
+                        <ul class="tips-list">
+                            <li><i data-lucide="check" style="color: var(--primary); width: 16px; height: 16px; flex-shrink: 0;"></i><span>Use your registered trusted device for instant zero-friction approvals.</span></li>
+                            <li><i data-lucide="check" style="color: var(--primary); width: 16px; height: 16px; flex-shrink: 0;"></i><span>New devices or travel to a new city trigger Tier-2 Biometric / Face Verification instead of permanent blocking.</span></li>
+                            <li><i data-lucide="check" style="color: var(--primary); width: 16px; height: 16px; flex-shrink: 0;"></i><span>High-risk Tor/VPN nodes with repeated failed logins are intercepted immediately by Tier-3 Auto-Defense.</span></li>
+                            <li><i data-lucide="check" style="color: var(--primary); width: 16px; height: 16px; flex-shrink: 0;"></i><span>Every flagged transaction includes per-feature Explainable AI (XAI) reconstruction residuals.</span></li>
+                        </ul>
+
+                        <div class="priority-shield-box">
+                            <i data-lucide="shield-check" style="color: var(--primary); width: 42px; height: 42px; margin-bottom: 8px;"></i>
+                            <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">Your security<br>is our priority</div>
+                            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 6px;">Protected by 19-Feature Deep Autoencoder</p>
                         </div>
-                        <div style="margin-top: 18px;">
-                            <button type="submit" class="btn btn-primary">🚀 Score Transaction Through 3-Tier Engine</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
 
-            <!-- TAB 3: CSV UPLOAD -->
-            <div id="tab-upload" class="tab-panel">
-                <div class="section-box" style="text-align: center; padding: 40px;">
-                    <h3>📁 Batch Dataset Upload (CSV Ingestion)</h3>
-                    <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 20px;">
-                        Upload <code>data/transactions_test.csv</code> to run batch unsupervised Autoencoder scoring.
+            <!-- VIEW 3: VERIFICATION QUEUE (Screen 8 Admin/Analyst View) -->
+            <div id="view-queue" class="tab-view">
+                <div class="card-panel">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Verification Queue (Analyst Step-Up Review)</div>
+                            <div class="card-sub">Manage transactions held in Tier-2 for Biometric / Face ID verification</div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="enterprise-table">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Amount</th>
+                                    <th>Device &amp; Location</th>
+                                    <th>Risk Score (MSE)</th>
+                                    <th>Status</th>
+                                    <th>Analyst / Biometric Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queue-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 4: DEVICE MANAGEMENT -->
+            <div id="view-devices" class="tab-view">
+                <div class="card-panel">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Registered Trusted Devices (Biometric Hardware Binding)</div>
+                            <div class="card-sub">Devices bound to Customer #11453 (Mohammad Aun). New phones automatically bind here upon passing Biometric Face Scan.</div>
+                        </div>
+                        <button class="btn" onclick="loadTrustedDevices()"><i data-lucide="refresh-cw"></i> Refresh Devices</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="enterprise-table">
+                            <thead>
+                                <tr>
+                                    <th>Device ID</th>
+                                    <th>Hardware Identifier</th>
+                                    <th>Device Model &amp; OS</th>
+                                    <th>Class</th>
+                                    <th>Trust Status</th>
+                                    <th>Bound Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="devices-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: BATCH CSV UPLOAD -->
+            <div id="view-batch" class="tab-view">
+                <div class="card-panel" style="max-width: 680px; margin: 0 auto; text-align: center; padding: 44px 32px;">
+                    <div style="width: 56px; height: 56px; border-radius: 14px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                        <i data-lucide="upload-cloud" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h3 style="font-size: 18px; font-weight: 700;">Batch Dataset Ingestion (CSV)</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin: 8px 0 24px;">
+                        Select <code>data/transactions_test.csv</code> to score transactions in batch through the 19-Feature Unsupervised Autoencoder.
                     </p>
-                    <input type="file" id="csv-file-input" accept=".csv" style="margin-bottom: 16px;">
+                    <input type="file" id="csv-file-input" accept=".csv" style="margin-bottom: 18px; font-size: 13px;">
                     <br>
-                    <button class="btn btn-primary" onclick="uploadCSV()">🚀 Upload &amp; Process CSV Dataset</button>
-                    <div id="csv-status" style="margin-top: 16px; font-size: 13px; color: #34d399;"></div>
+                    <button class="btn btn-primary" onclick="uploadCSV()" style="padding: 11px 22px;">
+                        <i data-lucide="play"></i> Upload &amp; Score CSV Dataset
+                    </button>
+                    <div id="csv-status" style="margin-top: 18px; font-size: 13px; font-weight: 600; color: var(--success);"></div>
                 </div>
             </div>
 
-            <!-- TAB 4: EVALUATION METRICS -->
-            <div id="tab-metrics" class="tab-panel">
-                <div class="section-box">
-                    <div class="section-header">
+            <!-- VIEW 6: MODEL BENCHMARK -->
+            <div id="view-benchmark" class="tab-view">
+                <div class="kpi-row">
+                    <div class="kpi-card"><div class="kpi-title">Test Accuracy</div><div class="kpi-number" style="color: var(--success);">98.95%</div><div class="kpi-trend">98,836 / 99,887 Correct</div></div>
+                    <div class="kpi-card"><div class="kpi-title">Zero-Day Recall</div><div class="kpi-number" style="color: var(--primary);">95.92%</div><div class="kpi-trend">1,902 / 1,983 Frauds Caught</div></div>
+                    <div class="kpi-card"><div class="kpi-title">F1-Score</div><div class="kpi-number">78.35%</div><div class="kpi-trend">Precision: 66.23%</div></div>
+                    <div class="kpi-card"><div class="kpi-title">ROC-AUC Score</div><div class="kpi-number" style="color: #7c3aed;">0.9980</div><div class="kpi-trend">Threshold: 1.034719 MSE</div></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="card-header">
                         <div>
-                            <h3>📈 Future Test Dataset Evaluation (99,887 Unseen Transactions)</h3>
-                            <p style="font-size: 12px; color: var(--text-muted);">Verified performance of the 19-Feature Unsupervised Autoencoder at Frozen Threshold = 1.034719</p>
+                            <div class="card-title">Model Architecture Benchmark (99,887 Unseen Test Transactions)</div>
+                            <div class="card-sub">Why Unsupervised Deep Autoencoder outperforms Supervised Tree Models on unseen Zero-Day attacks</div>
                         </div>
                     </div>
-                    <div class="kpi-grid" id="eval-metrics-grid">
-                        <div class="kpi-card"><div class="kpi-label">Accuracy</div><div class="kpi-value" style="color:#34d399;">98.95%</div><div class="kpi-sub">98,836 / 99,887 correct</div></div>
-                        <div class="kpi-card"><div class="kpi-label">Fraud Recall</div><div class="kpi-value" style="color:#38bdf8;">95.92%</div><div class="kpi-sub">1,902 / 1,983 frauds caught</div></div>
-                        <div class="kpi-card"><div class="kpi-label">Precision</div><div class="kpi-value" style="color:#fbbf24;">66.23%</div><div class="kpi-sub">Low false-alert friction</div></div>
-                        <div class="kpi-card"><div class="kpi-label">F1-Score</div><div class="kpi-value">78.35%</div><div class="kpi-sub">Balanced harmonic score</div></div>
-                        <div class="kpi-card"><div class="kpi-label">ROC-AUC</div><div class="kpi-value" style="color:#c084fc;">0.9980</div><div class="kpi-sub">Near-ideal class separation</div></div>
+                    <div class="table-wrapper">
+                        <table class="enterprise-table">
+                            <thead>
+                                <tr>
+                                    <th>Model Architecture</th>
+                                    <th>Learning Paradigm</th>
+                                    <th>Accuracy</th>
+                                    <th>Precision</th>
+                                    <th>Zero-Day Fraud Recall</th>
+                                    <th>F1-Score</th>
+                                    <th>ROC-AUC</th>
+                                    <th>Frauds Caught (Out of 1,983)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>XGBoost Classifier</strong></td>
+                                    <td>Supervised (Needs Labels)</td>
+                                    <td>98.12%</td>
+                                    <td>71.40%</td>
+                                    <td class="risk-score-high">41.20% (Low)</td>
+                                    <td>52.25%</td>
+                                    <td>0.8410</td>
+                                    <td>817 Caught / 1,166 Missed</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>LightGBM Classifier</strong></td>
+                                    <td>Supervised (Needs Labels)</td>
+                                    <td>98.05%</td>
+                                    <td>69.85%</td>
+                                    <td class="risk-score-high">39.64% (Low)</td>
+                                    <td>50.58%</td>
+                                    <td>0.8350</td>
+                                    <td>786 Caught / 1,197 Missed</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>CatBoost Classifier</strong></td>
+                                    <td>Supervised (Needs Labels)</td>
+                                    <td>98.24%</td>
+                                    <td>72.90%</td>
+                                    <td class="risk-score-high">44.83% (Low)</td>
+                                    <td>55.52%</td>
+                                    <td>0.8620</td>
+                                    <td>889 Caught / 1,094 Missed</td>
+                                </tr>
+                                <tr style="background: #eff6ff;">
+                                    <td><strong>Deep Autoencoder (Ours)</strong></td>
+                                    <td><strong>Unsupervised (Genuine Only)</strong></td>
+                                    <td><strong>98.95%</strong></td>
+                                    <td><strong>66.23%</strong></td>
+                                    <td class="risk-score-low"><strong>95.92% (High)</strong></td>
+                                    <td><strong>78.35%</strong></td>
+                                    <td><strong>0.9980</strong></td>
+                                    <td><strong>1,902 Caught / Only 81 Missed</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -780,52 +1165,54 @@
         </div>
     </div>
 
-    <!-- INVESTIGATION, FACE SCAN & OFFICIAL PDF MODAL -->
-    <div class="modal-overlay" id="investigation-modal">
-        <div class="modal-box">
-            <div id="investigation-content">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-                    <div>
-                        <h3 id="modal-title">FraudGuard AI — Forensic Investigation</h3>
-                        <p id="modal-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"></p>
-                    </div>
-                    <div id="modal-status-badge"></div>
-                </div>
-
-                <!-- 1. CORE PARAMETERS -->
-                <div class="investigation-grid" id="modal-grid"></div>
-
-                <!-- 2. HACKER / ENDPOINT FORENSIC TELEMETRY -->
-                <div style="margin: 14px 0; padding: 14px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 10px;" id="modal-forensic-box"></div>
-
-                <!-- 3. XAI RESIDUAL REASONS -->
-                <div class="xai-box reason-box" id="modal-xai-box"></div>
-
-                <!-- 4. DECISION & STEP-UP BIOMETRIC / FACE SCAN WORKFLOW -->
-                <div class="decision-box" id="modal-decision-box" style="margin-top: 14px;"></div>
+    <!-- MODAL: TRANSACTION RESULT / FRAUD ALERT / BIOMETRIC VERIFICATION (Screens 4, 5 & 6) -->
+    <div class="modal-backdrop" id="investigation-modal">
+        <div class="modal-dialog">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 17px; font-weight: 700;">Transaction Security Assessment &amp; Verification</h3>
+                <button class="btn" onclick="closeModal()">Close</button>
             </div>
 
-            <div style="display: flex; justify-content: space-between; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);">
-                <button class="btn" onclick="closeModal()">✖ Close</button>
-                <button class="btn btn-primary" onclick="downloadPDF()">📄 Download Official Times New Roman Audit PDF</button>
+            <!-- Dynamic Status Banner -->
+            <div id="modal-banner" class="alert-banner banner-approved"></div>
+
+            <div class="modal-split">
+                <!-- Left Column: Transaction & Forensic Details -->
+                <div>
+                    <div class="detail-pairs" id="modal-details-grid"></div>
+
+                    <div class="why-card" style="margin-top: 14px;" id="modal-forensic-card"></div>
+                </div>
+
+                <!-- Right Column: Why this happened (XAI) + Biometric Verification (Screen 6) -->
+                <div>
+                    <div class="why-card" id="modal-xai-card"></div>
+
+                    <div class="why-card" style="margin-top: 14px; text-align: center;" id="modal-biometric-card"></div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <span style="font-size: 12px; color: var(--text-secondary);">ZeroDay 19-Feature Deep Autoencoder • Frozen Threshold: 1.0347 MSE</span>
+                <button class="btn btn-primary" onclick="downloadPDF()">
+                    <i data-lucide="file-text"></i> Download Official Audit PDF Report
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast-notification" id="toast"></div>
 
     <script>
+        lucide.createIcons();
         const socket = io();
         let currentModalTxn = null;
         let webcamStream = null;
+        let mseChart = null;
+        let tierChart = null;
 
-        socket.on("new_transaction", () => {
-            loadTransactions("all");
-        });
-
-        socket.on("transaction_updated", () => {
-            loadTransactions("all");
-        });
+        socket.on("new_transaction", () => loadTransactions("all"));
+        socket.on("transaction_updated", () => loadTransactions("all"));
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -834,41 +1221,93 @@
             setTimeout(() => { t.style.display = "none"; }, 3500);
         }
 
-        function switchTab(tabName, btn) {
-            document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-            document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("tab-" + tabName).classList.add("active");
+        function switchView(viewId, btn) {
+            document.querySelectorAll(".tab-view").forEach(v => v.classList.remove("active"));
+            document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+            document.getElementById("view-" + viewId).classList.add("active");
             if (btn) btn.classList.add("active");
+            if (viewId === "devices") loadTrustedDevices();
         }
 
-        function getStatusBadge(status) {
+        function formatStatusPill(status) {
             const s = String(status || "");
             if (s.startsWith("Approved")) {
-                return `<span class="badge badge-approved">${s}</span>`;
+                return `<span class="status-pill pill-approved">Approved</span>`;
             }
-            if (s.startsWith("Hold & Verify")) {
-                return `<span class="badge badge-hold">${s}</span>`;
+            if (s.startsWith("Hold")) {
+                return `<span class="status-pill pill-review">Under Review</span>`;
             }
-            return `<span class="badge badge-blocked">${s}</span>`;
+            return `<span class="status-pill pill-blocked">Auto-Blocked</span>`;
         }
 
-        function getTierBadge(tier, risk) {
-            if (tier === "TIER_3_CRITICAL_BLOCK") {
-                return `<span class="badge badge-blocked">🛑 TIER 3: CRITICAL HACKER BLOCK</span>`;
-            }
-            if (tier === "TIER_2_STEP_UP") {
-                return `<span class="badge badge-hold">⏳ TIER 2: 2-STEP BIOMETRIC / FACE SCAN</span>`;
-            }
-            if (tier === "TIER_2_VERIFIED" || String(risk).toLowerCase() === "verified") {
-                return `<span class="badge badge-approved">🔐 BIOMETRIC VERIFIED &amp; DEVICE TRUSTED</span>`;
-            }
-            return `<span class="badge badge-approved">🟢 TIER 1: SAFE PATTERN</span>`;
+        function updateCharts(transactions, stats) {
+            const recent = [...transactions].slice(0, 12).reverse();
+            const labels = recent.map(t => "#" + String(t.transaction_id).slice(-4));
+            const mseData = recent.map(t => Number(t.reconstruction_error || 0).toFixed(3));
+            const thresholdLine = recent.map(() => 1.0347);
+
+            const ctxLine = document.getElementById("mseLineChart").getContext("2d");
+            if (mseChart) mseChart.destroy();
+            mseChart = new Chart(ctxLine, {
+                type: "line",
+                data: {
+                    labels: labels.length ? labels : ["No Data"],
+                    datasets: [
+                        {
+                            label: "Reconstruction Error (MSE)",
+                            data: mseData.length ? mseData : [0],
+                            borderColor: "#2563eb",
+                            backgroundColor: "rgba(37, 99, 235, 0.12)",
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 4
+                        },
+                        {
+                            label: "Threshold (1.0347)",
+                            data: thresholdLine.length ? thresholdLine : [1.0347],
+                            borderColor: "#ef4444",
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: "top" } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const ctxDoughnut = document.getElementById("tierDoughnutChart").getContext("2d");
+            if (tierChart) tierChart.destroy();
+            const approvedCount = stats ? stats.approved : 0;
+            const holdCount = stats ? stats.hold : 0;
+            const blockedCount = stats ? stats.rejected : 0;
+            tierChart = new Chart(ctxDoughnut, {
+                type: "doughnut",
+                data: {
+                    labels: ["Approved (Tier 1)", "Under Review (Tier 2)", "Blocked (Tier 3)"],
+                    datasets: [{
+                        data: (approvedCount + holdCount + blockedCount) > 0 ? [approvedCount, holdCount, blockedCount] : [1, 0, 0],
+                        backgroundColor: ["#10b981", "#f59e0b", "#ef4444"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "68%",
+                    plugins: { legend: { position: "bottom" } }
+                }
+            });
         }
 
         async function loadTransactions(filter = "all", cardEl = null) {
             if (cardEl) {
-                document.querySelectorAll(".kpi-card").forEach(c => c.classList.remove("active-filter"));
-                cardEl.classList.add("active-filter");
+                document.querySelectorAll(".kpi-card").forEach(c => c.classList.remove("active-card"));
+                cardEl.classList.add("active-card");
             }
             const res = await fetch(`/api/transactions?filter=${filter}`);
             const data = await res.json();
@@ -878,73 +1317,92 @@
                 document.getElementById("stat-approved").innerText = data.stats.approved;
                 document.getElementById("stat-hold").innerText = data.stats.hold;
                 document.getElementById("stat-rejected").innerText = data.stats.rejected;
-                document.getElementById("stat-high").innerText = data.stats.high;
+                document.getElementById("nav-hold-badge").innerText = data.stats.hold;
             }
 
-            const container = document.getElementById("transactions-container");
             const list = data.transactions || [];
+            updateCharts(list, data.stats);
+
+            const tbody = document.getElementById("dashboard-table-body");
             if (list.length === 0) {
-                container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 30px;">No transactions in this view. Click any 1-Click Scenario button above to test!</p>`;
-                return;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 32px; color: var(--text-secondary);">No transactions found. Use the Live 3-Tier Simulation buttons above to generate traffic.</td></tr>`;
+            } else {
+                tbody.innerHTML = list.map(t => {
+                    const mse = Number(t.reconstruction_error || 0);
+                    const scoreClass = mse > 1.0347 ? "risk-score-high" : "risk-score-low";
+                    return `
+                        <tr>
+                            <td><strong>TXN-${t.transaction_id}</strong></td>
+                            <td style="color: var(--text-secondary);">${t.transaction_time || t.created_at || ""}</td>
+                            <td>
+                                <div style="font-weight: 600;">${t.device_name || t.device_type || "Mobile"}</div>
+                                <div style="font-size: 11.5px; color: var(--text-secondary);">${t.device_trust_status || ""}</div>
+                            </td>
+                            <td>
+                                <div>${t.geo_location || "Nashik, IN"}</div>
+                                <div style="font-size: 11.5px; color: var(--text-secondary);">${t.ip_address || ""}</div>
+                            </td>
+                            <td><strong>₹${Number(t.transaction_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></td>
+                            <td>${formatStatusPill(t.transaction_status)}</td>
+                            <td class="${scoreClass}">${mse.toFixed(4)}</td>
+                            <td>
+                                <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="openInvestigation('${t.transaction_id}')">
+                                    Inspect
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
             }
 
-            container.innerHTML = list.map(t => {
-                const status = String(t.transaction_status || "");
-                let cardClass = "txn-card";
-                if (status.startsWith("Hold")) cardClass += " tier-hold";
-                else if (status.startsWith("Auto-Blocked") || status.startsWith("Rejected")) cardClass += " tier-blocked";
-
-                return `
-                    <div class="${cardClass}">
-                        <div class="txn-header">
-                            <div>
-                                <span class="txn-title">Transaction #${t.transaction_id}</span>
-                                <div class="txn-time">${t.created_at || t.transaction_time || ""}</div>
+            // Populate Verification Queue Table
+            const qBody = document.getElementById("queue-table-body");
+            const holdList = list.filter(t => String(t.transaction_status).startsWith("Hold"));
+            if (holdList.length === 0) {
+                qBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 28px; color: var(--text-secondary);">No pending transactions in the verification queue.</td></tr>`;
+            } else {
+                qBody.innerHTML = holdList.map(t => `
+                    <tr>
+                        <td><strong>TXN-${t.transaction_id}</strong></td>
+                        <td><strong>₹${Number(t.transaction_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</strong></td>
+                        <td>${t.device_name} • ${t.geo_location}</td>
+                        <td class="risk-score-high">${Number(t.reconstruction_error).toFixed(4)}</td>
+                        <td>${formatStatusPill(t.transaction_status)}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn" onclick="openInvestigation('${t.transaction_id}')">Verify Identity</button>
+                                <button class="btn btn-outline-green" onclick="verifyTransaction('${t.transaction_id}', 'APPROVED')">Approve</button>
+                                <button class="btn btn-outline-red" onclick="verifyTransaction('${t.transaction_id}', 'REJECTED')">Reject</button>
                             </div>
-                            <div>
-                                ${getStatusBadge(t.transaction_status)}
-                                ${getTierBadge(t.security_tier, t.risk_level)}
-                            </div>
-                        </div>
+                        </td>
+                    </tr>
+                `).join("");
+            }
+        }
 
-                        <div class="txn-metrics-grid">
-                            <div class="mini-box"><div class="mini-label">Customer ID</div><div class="mini-val">${t.customer_id}</div></div>
-                            <div class="mini-box"><div class="mini-label">Merchant ID</div><div class="mini-val">${t.merchant_id}</div></div>
-                            <div class="mini-box"><div class="mini-label">Amount</div><div class="mini-val">₹${Number(t.transaction_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></div>
-                            <div class="mini-box"><div class="mini-label">Reconstruction Error</div><div class="mini-val">${Number(t.reconstruction_error || 0).toFixed(4)}</div></div>
-                            <div class="mini-box"><div class="mini-label">Threshold</div><div class="mini-val">${Number(t.threshold || 1.0347).toFixed(4)}</div></div>
-                        </div>
-
-                        <div class="forensic-strip">
-                            <div class="forensic-item"><strong>📍 Geo-Location &amp; Distance</strong>${t.geo_location || "Nashik, MH, IN"}</div>
-                            <div class="forensic-item"><strong>📱 Device Model &amp; OS</strong>${t.device_name || t.device_type || "Mobile"}</div>
-                            <div class="forensic-item"><strong>🌐 Network IP &amp; Risk</strong>${t.ip_address || "103.48.19.112"} (Risk: ${Number(t.ip_risk_score || 0).toFixed(2)})</div>
-                            <div class="forensic-item"><strong>🔐 Device Trust Status</strong>${t.device_trust_status || "Trusted Device ✅"}</div>
-                        </div>
-
-                        <div class="xai-box">
-                            <div class="xai-title">✨ Explainable AI (Behavioral Residual Contribution &amp; Forensic Summary)</div>
-                            <div style="margin-bottom: 4px; color: #f8fafc; font-weight: 600;">${t.forensic_summary || ""}</div>
-                            <div>${t.xai_explanation || ""}</div>
-                        </div>
-
-                        <div class="txn-footer">
-                            <span>Channel: ${t.payment_channel || "card"} • Failed Auth (24h): ${t.failed_txn_count_24h || 0}</span>
-                            <button class="btn btn-primary" onclick="openInvestigation('${t.transaction_id}')">🔍 Investigate, Biometric Scan &amp; PDF</button>
-                        </div>
-                    </div>
-                `;
-            }).join("");
+        async function loadTrustedDevices() {
+            const res = await fetch("/api/customer/11453/devices");
+            const data = await res.json();
+            const tbody = document.getElementById("devices-table-body");
+            const devices = data.devices || [];
+            tbody.innerHTML = devices.map(d => `
+                <tr>
+                    <td>#${d.device_id}</td>
+                    <td><code>${d.device_identifier}</code></td>
+                    <td><strong>${d.device_model}</strong></td>
+                    <td>${d.device_type}</td>
+                    <td><span class="status-pill pill-approved">Trusted &amp; Active</span></td>
+                    <td>${d.registered_at}</td>
+                </tr>
+            `).join("");
         }
 
         async function triggerScenario(scenario) {
             const res = await fetch(`/api/simulate/${scenario}`, { method: "POST" });
             const data = await res.json();
-            showToast(`Scored #${data.transaction_id}: ${data.transaction_status}`);
+            showToast(`Transaction TXN-${data.transaction_id}: ${data.transaction_status}`);
             await loadTransactions("all");
-            if (scenario !== "genuine_aun") {
-                openInvestigation(data.transaction_id);
-            }
+            openInvestigation(data.transaction_id);
         }
 
         async function fillPreset(scenario) {
@@ -954,7 +1412,7 @@
             Object.keys(preset).forEach(k => {
                 if (form.elements[k]) form.elements[k].value = preset[k];
             });
-            showToast(`Loaded preset: ${scenario}`);
+            showToast(`Loaded scenario preset: ${scenario}`);
         }
 
         async function submitManualForm(e) {
@@ -970,9 +1428,9 @@
                 body: JSON.stringify(payload)
             });
             const result = await res.json();
-            showToast(`Transaction #${result.transaction_id}: ${result.transaction_status}`);
-            switchTab("dashboard", document.querySelectorAll(".nav-btn")[0]);
-            loadTransactions("all");
+            showToast(`Scored TXN-${result.transaction_id}: ${result.transaction_status}`);
+            switchView("dashboard", document.querySelectorAll(".nav-item")[0]);
+            await loadTransactions("all");
             openInvestigation(result.transaction_id);
         }
 
@@ -982,68 +1440,80 @@
             const t = data.transaction;
             currentModalTxn = t;
 
-            document.getElementById("modal-subtitle").innerText = `Transaction #${t.transaction_id} • Customer #${t.customer_id} • Timestamp: ${t.transaction_time || t.created_at}`;
-            document.getElementById("modal-status-badge").innerHTML = getStatusBadge(t.transaction_status) + getTierBadge(t.security_tier, t.risk_level);
+            const status = String(t.transaction_status || "");
+            const banner = document.getElementById("modal-banner");
 
-            document.getElementById("modal-grid").innerHTML = `
-                <div class="mini-box"><div class="mini-label">Transaction Amount</div><div class="mini-val">₹${Number(t.transaction_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</div></div>
-                <div class="mini-box"><div class="mini-label">Reconstruction Error (MSE)</div><div class="mini-val" style="color:#f87171;">${Number(t.reconstruction_error).toFixed(4)}</div></div>
-                <div class="mini-box"><div class="mini-label">Calibrated Threshold</div><div class="mini-val">${Number(t.threshold).toFixed(4)}</div></div>
-                <div class="mini-box"><div class="mini-label">Payment Channel</div><div class="mini-val">${t.payment_channel} • ${t.device_type}</div></div>
-                <div class="mini-box"><div class="mini-label">Failed Auth (24h)</div><div class="mini-val">${t.failed_txn_count_24h || 0} Attempts</div></div>
-                <div class="mini-box"><div class="mini-label">Amount Spike vs Mean</div><div class="mini-val">+₹${Number(t.amount_deviation_from_user_mean || 0).toLocaleString('en-IN')}</div></div>
-            `;
-
-            document.getElementById("modal-forensic-box").innerHTML = `
-                <div style="font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;">🕵️‍♂️ ENDPOINT &amp; NETWORK FORENSIC TELEMETRY (ATTACKER / DEVICE KUNDALI)</div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px;">
-                    <div><strong>📍 Geo-Location &amp; Distance:</strong> ${t.geo_location || "N/A"}</div>
-                    <div><strong>📱 Device Fingerprint:</strong> ${t.device_name || "N/A"} (${t.device_identifier || ""})</div>
-                    <div><strong>🌐 IP Address &amp; Subnet Risk:</strong> ${t.ip_address || "N/A"} (Risk Score: ${Number(t.ip_risk_score || 0).toFixed(2)})</div>
-                    <div><strong>🔐 Hardware Trust State:</strong> ${t.device_trust_status || "N/A"}</div>
-                </div>
-                <div style="margin-top: 8px; font-size: 12px; color: #e2e8f0;"><strong>Forensic Assessment:</strong> ${t.forensic_summary || ""}</div>
-            `;
-
-            const reasons = String(t.xai_explanation || "").split(" | ").map(r => `<li style="margin-bottom: 4px;">${r}</li>`).join("");
-            document.getElementById("modal-xai-box").innerHTML = `
-                <div class="xai-title">🧠 Explainable AI — Top Behavioral Reconstruction Residuals</div>
-                <ul style="padding-left: 18px; margin-top: 6px;">${reasons}</ul>
-            `;
-
-            const decisionBox = document.getElementById("modal-decision-box");
-            if (String(t.transaction_status).startsWith("Hold & Verify")) {
-                decisionBox.innerHTML = `
-                    <div class="biometric-scanner-box">
-                        <h4 style="color: #fbbf24; margin-bottom: 6px;">🔐 STEP-UP 2-FACTOR BIOMETRIC / FACE ID VERIFICATION REQUIRED</h4>
-                        <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 10px;">
-                            Customer #${t.customer_id} is transacting from an unverified device/location (<strong>${t.device_name}</strong> at <strong>${t.geo_location}</strong>).
-                            Complete Face ID / Biometric scan to approve and bind this device as trusted.
-                        </p>
-                        <video id="webcam-preview" autoplay playsinline muted></video>
-                        <div id="scan-status-msg" style="font-size: 12px; color: #38bdf8; margin: 8px 0;"></div>
-                        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="startLiveFaceScan('${t.transaction_id}')">📸 Start Live Camera Face Scan &amp; Auto-Approve</button>
-                            <button class="btn btn-tier1" onclick="verifyTransaction('${t.transaction_id}', 'APPROVED')">✅ Biometric Passed (Approve &amp; Trust Device)</button>
-                            <button class="btn btn-tier3" onclick="verifyTransaction('${t.transaction_id}', 'REJECTED')">❌ Biometric Failed (Block Attack)</button>
-                        </div>
+            if (status.startsWith("Approved")) {
+                banner.className = "alert-banner banner-approved";
+                banner.innerHTML = `
+                    <div>
+                        <div style="font-size: 16px; font-weight: 700;">Transaction Approved</div>
+                        <div style="font-size: 13px; margin-top: 2px;">This transaction passed our zero-day behavioral checks and is verified safe.</div>
                     </div>
                 `;
-            } else if (String(t.transaction_status).startsWith("Auto-Blocked")) {
-                decisionBox.innerHTML = `
-                    <div style="padding: 14px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.12); border-radius: 10px; font-size: 12px;">
-                        <strong style="color: #f87171; font-size: 13px;">🛑 TIER-3 AUTONOMOUS FIREWALL INTERCEPTION (INSTANT BLOCK)</strong>
-                        <p style="margin-top: 4px; color: #fecaca;">
-                            This transaction crossed the critical anomaly ceiling and exhibited severe Account Takeover telemetry.
-                            The transfer of ₹${Number(t.transaction_amount).toLocaleString('en-IN')} was automatically blocked before settlement and the host device (${t.device_name}) was blacklisted.
-                        </p>
+            } else if (status.startsWith("Hold")) {
+                banner.className = "alert-banner banner-review";
+                banner.innerHTML = `
+                    <div>
+                        <div style="font-size: 16px; font-weight: 700;">Transaction Under Review (Step-Up Verification Required)</div>
+                        <div style="font-size: 13px; margin-top: 2px;">Unusual device or location detected. Held temporarily for 2-Step Biometric / Face verification.</div>
                     </div>
                 `;
             } else {
-                decisionBox.innerHTML = `
-                    <div style="padding: 12px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); border-radius: 10px; font-size: 12px; color: #a7f3d0;">
-                        <strong>✅ Final Audit Verdict:</strong> ${t.transaction_status} • Device Status: ${t.device_trust_status}
+                banner.className = "alert-banner banner-blocked";
+                banner.innerHTML = `
+                    <div>
+                        <div style="font-size: 16px; font-weight: 700;">Critical Fraud Alert — Transaction Auto-Blocked</div>
+                        <div style="font-size: 13px; margin-top: 2px;">Extreme anomaly score with high-risk network telemetry intercepted by Tier-3 Autonomous Firewall.</div>
                     </div>
+                `;
+            }
+
+            const mse = Number(t.reconstruction_error || 0);
+            document.getElementById("modal-details-grid").innerHTML = `
+                <div><div class="pair-label">Transaction ID</div><div class="pair-value">TXN-${t.transaction_id}</div></div>
+                <div><div class="pair-label">Amount</div><div class="pair-value">₹${Number(t.transaction_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</div></div>
+                <div><div class="pair-label">Customer / Merchant</div><div class="pair-value">#${t.customer_id} → Merchant #${t.merchant_id}</div></div>
+                <div><div class="pair-label">Payment Method</div><div class="pair-value">${t.payment_channel} (${t.device_type})</div></div>
+                <div><div class="pair-label">Date &amp; Time</div><div class="pair-value">${t.transaction_time || t.created_at}</div></div>
+                <div><div class="pair-label">Risk Score (MSE vs 1.0347)</div><div class="pair-value" style="color:${mse > 1.0347 ? '#dc2626' : '#059669'};">${mse.toFixed(4)} (${t.risk_level})</div></div>
+            `;
+
+            document.getElementById("modal-forensic-card").innerHTML = `
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary);">Endpoint &amp; Network Forensic Telemetry</div>
+                <div style="font-size: 12.5px; color: #334155; display: flex; flex-direction: column; gap: 7px;">
+                    <div><strong>Origin Location:</strong> ${t.geo_location || "N/A"} (${t.geo_distance_from_last_txn || 0} km)</div>
+                    <div><strong>Device Fingerprint:</strong> ${t.device_name || "N/A"} [<code>${t.device_identifier || ""}</code>]</div>
+                    <div><strong>IP Address &amp; Risk:</strong> ${t.ip_address || "N/A"} (IP Risk: ${Number(t.ip_risk_score || 0).toFixed(2)} | Failed Logins: ${t.failed_txn_count_24h || 0})</div>
+                    <div><strong>Hardware Trust State:</strong> ${t.device_trust_status || "N/A"}</div>
+                </div>
+            `;
+
+            const reasons = String(t.xai_explanation || "").split(" | ").map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join("");
+            document.getElementById("modal-xai-card").innerHTML = `
+                <div style="font-size: 13.5px; font-weight: 700; margin-bottom: 8px;">Why this happened? (Explainable AI)</div>
+                <ul style="padding-left: 18px; font-size: 12.5px; color: #334155; line-height: 1.5;">${reasons}</ul>
+            `;
+
+            const bioCard = document.getElementById("modal-biometric-card");
+            if (status.startsWith("Hold")) {
+                bioCard.innerHTML = `
+                    <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Verify Your Identity</div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Complete biometric or face verification to approve and bind <strong>${t.device_name}</strong> as a trusted device.</p>
+                    <div class="fingerprint-circle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></svg>
+                    </div>
+                    <video id="webcam-preview" autoplay playsinline muted></video>
+                    <div id="scan-status-msg" style="font-size: 12px; font-weight: 600; color: var(--primary); margin: 8px 0;">Waiting for biometric confirmation...</div>
+                    <div class="btn-group" style="justify-content: center; margin-top: 10px;">
+                        <button class="btn btn-primary" onclick="startLiveFaceScan('${t.transaction_id}')">Verify with Biometric / Face Scan</button>
+                        <button class="btn btn-outline-red" onclick="verifyTransaction('${t.transaction_id}', 'REJECTED')">Cancel / Block</button>
+                    </div>
+                `;
+            } else {
+                bioCard.innerHTML = `
+                    <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Security Resolution</div>
+                    <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">${t.forensic_summary || ""}</p>
                 `;
             }
 
@@ -1053,14 +1523,14 @@
         async function startLiveFaceScan(txnId) {
             const video = document.getElementById("webcam-preview");
             const msg = document.getElementById("scan-status-msg");
-            msg.innerText = "🔍 Initializing Biometric Face ID Camera...";
+            msg.innerText = "Initializing camera & biometric sensor...";
             try {
                 webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = webcamStream;
                 video.style.display = "block";
-                msg.innerText = "📸 Scanning Facial Landmarks & Liveness (Hold steady for 2.5s)...";
+                msg.innerText = "Scanning facial landmarks & liveness (2.5s)...";
             } catch (err) {
-                msg.innerText = "🔐 Running Hardware Fingerprint / Biometric Token Challenge (2.5s)...";
+                msg.innerText = "Verifying hardware fingerprint token (2.5s)...";
             }
 
             setTimeout(async () => {
@@ -1068,7 +1538,7 @@
                     webcamStream.getTracks().forEach(track => track.stop());
                     webcamStream = null;
                 }
-                msg.innerText = "✅ Biometric Liveness Match Confirmed (99.4% Confidence)! Binding Trusted Device...";
+                msg.innerText = "Identity Verified! Binding trusted device...";
                 await verifyTransaction(txnId, "APPROVED");
             }, 2500);
         }
@@ -1080,7 +1550,7 @@
                 body: JSON.stringify({ transaction_id: txnId, status: decision })
             });
             const data = await res.json();
-            showToast(data.message || "Verification updated");
+            showToast(data.message || "Verification status updated");
             await openInvestigation(txnId);
             await loadTransactions("all");
         }
@@ -1096,22 +1566,22 @@
         async function uploadCSV() {
             const input = document.getElementById("csv-file-input");
             if (!input.files.length) {
-                showToast("Please select a CSV file first!");
+                showToast("Please select a CSV file first.");
                 return;
             }
             const formData = new FormData();
             formData.append("file", input.files[0]);
-            document.getElementById("csv-status").innerText = "⏳ Scoring batch transactions through 19-Feature Autoencoder...";
+            document.getElementById("csv-status").innerText = "Scoring batch dataset through 19-Feature Autoencoder...";
             const res = await fetch("/api/upload_csv", { method: "POST", body: formData });
             const data = await res.json();
-            document.getElementById("csv-status").innerText = `✅ Processed ${data.processed} transactions | Anomalies Flagged: ${data.anomalies_detected} | Auto-Blocked: ${data.auto_blocked}`;
+            document.getElementById("csv-status").innerText = `Completed: ${data.processed} transactions scored | ${data.anomalies_detected} flagged | ${data.auto_blocked} auto-blocked.`;
             loadTransactions("all");
         }
 
         async function clearTransactions() {
             await fetch("/api/clear_transactions", { method: "POST" });
             loadTransactions("all");
-            showToast("Cleared transaction view");
+            showToast("Transaction history cleared");
         }
 
         function downloadPDF() {
@@ -1129,7 +1599,7 @@
             reportWrapper.innerHTML = `
                 <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end;">
                     <div>
-                        <h2 style="font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase;">FraudGuard AI — Official Forensic Audit Report</h2>
+                        <h2 style="font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase;">ZeroDay — Official Forensic Audit Report</h2>
                         <p style="font-size: 12px; color: #333; margin-top: 4px;">Zero-Day Payment Anomaly Detection &amp; Cyber Forensics Division</p>
                     </div>
                     <div style="text-align: right; font-size: 11px;">
@@ -1141,7 +1611,7 @@
                 <h4 style="font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase;">1. Transaction &amp; Model Evaluation Summary</h4>
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px;">
                     <tr>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Transaction ID:</strong> #${t.transaction_id}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Transaction ID:</strong> TXN-${t.transaction_id}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Customer ID:</strong> ${t.customer_id}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Merchant ID:</strong> ${t.merchant_id}</td>
                     </tr>
@@ -1187,10 +1657,10 @@
                     <div>
                         <p>_________________________________________</p>
                         <p style="margin-top: 4px;"><strong>Authorized SOC Forensic Auditor</strong></p>
-                        <p style="font-size: 10px; color: #444;">FraudGuard AI — 19-Feature Deep Autoencoder Engine</p>
+                        <p style="font-size: 10px; color: #444;">ZeroDay — 19-Feature Deep Autoencoder Engine</p>
                     </div>
                     <div style="text-align: right; font-size: 10px; color: #444;">
-                        <p>Document Hash: FG-2026-AE19-${t.transaction_id}</p>
+                        <p>Document Hash: ZD-2026-AE19-${t.transaction_id}</p>
                         <p>Verified Unsupervised ROC-AUC: 0.9980</p>
                     </div>
                 </div>
@@ -1198,14 +1668,14 @@
 
             const opt = {
                 margin: 0.45,
-                filename: `FraudGuard_Official_Audit_Report_${t.transaction_id}.pdf`,
+                filename: `ZeroDay_Official_Audit_Report_${t.transaction_id}.pdf`,
                 image: { type: "jpeg", quality: 0.99 },
                 html2canvas: { scale: 2, backgroundColor: "#ffffff" },
                 jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
             };
 
             html2pdf().set(opt).from(reportWrapper).save().then(() => {
-                showToast("📄 Official Times New Roman Audit PDF Downloaded!");
+                showToast("Official Audit PDF Report downloaded.");
             });
         }
 
