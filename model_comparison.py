@@ -33,7 +33,7 @@ def load_autoencoder_metrics():
 def print_model_comparison():
     ae = load_autoencoder_metrics()
     tp_str = f"{ae['true_positive']} / {ae['actual_fraud']}"
-    fn_str = f"{ae['false_negative']} Missed ✅"
+    fn_str = f"{ae['false_negative']} Missed "
 
     print("\n" + "=" * 88)
     print("📊 OFFICIAL MODEL BENCHMARK & ARCHITECTURE COMPARISON REPORT")
@@ -80,7 +80,7 @@ def print_model_comparison():
     )
     print("-" * 88)
     print(
-        f"{'Deep Autoencoder (OURS) ⭐':<26} | {'Unsupervised':<13} | "
+        f"{'Deep Autoencoder (OURS) ':<26} | {'Unsupervised':<13} | "
         f"{ae['accuracy']*100:6.2f}%   | {ae['precision']*100:6.2f}%   | "
         f"{ae['recall']*100:6.2f}% (HIGH)  | {ae['f1']*100:6.2f}%  | {ae['roc_auc']:.4f}"
     )
@@ -92,11 +92,11 @@ def print_model_comparison():
     print("-" * 88)
     print(f"{'Model':<26} | {'Frauds Caught (TP)':<20} | {'Frauds Missed (FN)':<20} | {'Security Verdict'}")
     print("-" * 88)
-    print(f"{'XGBoost':<26} | {'817  / 1983':<20} | {'1166 Missed ❌':<20} | {'Unsafe for Zero-Day Attacks'}")
-    print(f"{'LightGBM':<26} | {'786  / 1983':<20} | {'1197 Missed ❌':<20} | {'Unsafe for Zero-Day Attacks'}")
-    print(f"{'CatBoost':<26} | {'889  / 1983':<20} | {'1094 Missed ❌':<20} | {'Unsafe for Zero-Day Attacks'}")
+    print(f"{'XGBoost':<26} | {'817  / 1983':<20} | {'1166 Missed ':<20} | {'Unsafe for Zero-Day Attacks'}")
+    print(f"{'LightGBM':<26} | {'786  / 1983':<20} | {'1197 Missed ':<20} | {'Unsafe for Zero-Day Attacks'}")
+    print(f"{'CatBoost':<26} | {'889  / 1983':<20} | {'1094 Missed ':<20} | {'Unsafe for Zero-Day Attacks'}")
     print(
-        f"{'Deep Autoencoder (OURS) ⭐':<26} | {tp_str:<20} | {fn_str:<20} | {'Production Ready (95.92% Caught)'}"
+        f"{'Deep Autoencoder (OURS) ':<26} | {tp_str:<20} | {fn_str:<20} | {'Production Ready (95.92% Caught)'}"
     )
     print("-" * 88)
 
